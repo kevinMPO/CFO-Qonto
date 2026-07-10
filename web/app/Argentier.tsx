@@ -268,7 +268,7 @@ export default function Argentier() {
       {/* Barre */}
       <header className="arg-top">
         <div className="arg-brand">
-          <span className="arg-mark">₳</span>
+          <span className="arg-mark"><ArgLogo /></span>
           <span className="arg-word">Argentier</span>
           <span className="arg-chip">
             {data.account.name} · {data.account.bank}
@@ -581,7 +581,7 @@ export default function Argentier() {
         <div className="arg-pitch" role="dialog" aria-modal="true" aria-label={T.pitchKicker}>
           <div className="arg-pitch-bar">
             <span className="arg-pitch-brand">
-              <span className="arg-mark">₳</span> Argentier
+              <span className="arg-mark"><ArgLogo /></span> Argentier
             </span>
             <div className="arg-pitch-controls">
               <div className="arg-lang" role="group" aria-label="Language">
@@ -716,6 +716,24 @@ export default function Argentier() {
   );
 }
 
+// Marque Argentier : chevron « A » + barres ascendantes (le run-rate qui monte).
+function ArgLogo() {
+  return (
+    <svg className="arg-logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+      <path
+        d="M5.5 25.5 L16 5.5 L26.5 25.5"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <rect x="12" y="19.5" width="2.3" height="6" rx="0.7" className="arg-logo-bar" />
+      <rect x="15.4" y="16.5" width="2.3" height="9" rx="0.7" className="arg-logo-bar" />
+      <rect x="18.8" y="13.5" width="2.3" height="12" rx="0.7" className="arg-logo-bar" />
+    </svg>
+  );
+}
+
 function Metric({ label, value, note, accent }: { label: string; value: string; note?: string; accent?: boolean }) {
   return (
     <div className="arg-metric">
@@ -754,7 +772,9 @@ const CSS = `
 .arg-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
 .arg-brand{display:flex;align-items:center;gap:10px;}
 .arg-mark{width:30px;height:30px;border-radius:8px;background:var(--c-ink);color:var(--c-paper);
-  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-size:18px;}
+  display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-size:18px;flex:none;}
+.arg-logo{width:66%;height:66%;display:block;}
+.arg-logo-bar{fill:var(--c-amber);}
 .arg-word{font-family:'Space Grotesk';font-weight:600;font-size:18px;letter-spacing:-.01em;}
 .arg-chip{font-size:11px;color:var(--c-ink2);border:1px solid var(--c-line);border-radius:99px;padding:3px 10px;}
 .arg-src{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;letter-spacing:.01em;}
