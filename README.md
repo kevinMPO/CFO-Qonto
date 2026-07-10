@@ -12,7 +12,7 @@
 
 ## ▶ Demo (3 min)
 
-▶ **[Watch the demo on Loom](https://www.loom.com/share/e8c79ea61c38450fbefa73739417a458)** · Script → [`DEMO.md`](DEMO.md) · Détails → [`VIDEO.md`](VIDEO.md)
+▶ **[Watch the demo on Loom](https://www.loom.com/share/b9f1a77d8eeb4dd5b0a8699f0c885123)** · Script → [`DEMO.md`](DEMO.md) · Détails → [`VIDEO.md`](VIDEO.md)
 
 ## The problem
 
