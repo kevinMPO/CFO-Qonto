@@ -673,7 +673,7 @@ export default function Argentier() {
 
                   <div className="arg-arch-card">
                     <div className="arg-arch-head">
-                      <i className="calc" /> engine.py <span className="arg-arch-tag ink">deterministic</span>
+                      <i className="calc" /> Argentier <span className="arg-arch-tag ink">deterministic</span>
                     </div>
                     <p className="arg-arch-desc">Does every euro. Never the model.</p>
                     <code className="arg-arch-tools">recurrence · ×12 annualization · duplicates · FX fees · PRO / PERSO / TO&#8209;CLARIFY</code>
