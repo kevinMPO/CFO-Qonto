@@ -812,6 +812,16 @@ export default function Argentier() {
           ? T.footMock
           : T.footReal(data.meta?.txCount ?? 0, data.meta?.categorized === "claude")}
         {T.footPrivacy}
+        <br />
+        <b>
+          {L({
+            fr: "Prototype pour Hackathon Qonto",
+            en: "Prototype for Qonto Hackathon",
+            de: "Prototyp für den Qonto-Hackathon",
+            es: "Prototipo para el Hackathon de Qonto",
+            it: "Prototipo per l'Hackathon Qonto",
+          })}
+        </b>
       </footer>
 
       {/* Tiroir : lettre prête à envoyer (gate humain) */}
