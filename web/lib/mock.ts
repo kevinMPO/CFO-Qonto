@@ -37,6 +37,7 @@ export const MOCK: AnalyzeResult = {
     { id: "waa", label: "Waalaxy", to: "Apollo + Instantly", saving: 47, risk: "safe", active: true, action: "switch" },
     { id: "fx", label: "Frais FX / ATM", to: "carte Wise / Revolut", saving: 40, risk: "safe", active: true, action: "switch" },
     { id: "nesp", label: "Nespresso abo", to: "achat ponctuel", saving: 39, risk: "safe", active: true, action: "cancel" },
+    { id: "figma", label: "Figma", to: "revenir au tarif / renégo", saving: 5, risk: "safe", active: true, action: "renegotiate", monthly: 45, hausse: { pct: 12.5, avantEur: 40, apresEur: 45 } },
     { id: "gw", label: "Google Workspace ×2", to: "1 compte", saving: 27, risk: "safe", active: true, action: "consolidate" },
     { id: "repl", label: "Replit", to: "Claude Code + Cursor", saving: 28, risk: "med", active: true, action: "switch" },
     { id: "hey", label: "HeyGen", to: "pause / annuel", saving: 26, risk: "safe", active: true, action: "downgrade" },
@@ -75,5 +76,6 @@ export const MOCK: AnalyzeResult = {
       tone: "neutral",
     },
   ],
+  tvaPerdue: { transactions: 3, baseTtcEur: 360, tvaRecuperableEur: 60 },
   meta: { source: "mock", categorized: "rules", txCount: 0 },
 };

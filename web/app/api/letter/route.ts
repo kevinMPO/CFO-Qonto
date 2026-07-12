@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { generateLetter, type LetterRequest } from "@/lib/letters";
-import type { LeverAction } from "@/lib/types";
+import type { Lang, LeverAction } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,8 @@ const ACTIONS: LeverAction[] = [
   "consolidate",
   "renegotiate",
 ];
+
+const LANGS: Lang[] = ["fr", "en", "de", "es", "it"];
 
 export async function POST(request: Request) {
   let body: Partial<LetterRequest> & { action?: string };
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     alternative: String(body.alternative ?? ""),
     savingMonthly: Number(body.savingMonthly ?? 0),
     savingAnnual: Number(body.savingAnnual ?? (Number(body.savingMonthly ?? 0) * 12)),
-    lang: body.lang === "en" ? "en" : "fr",
+    lang: body.lang && LANGS.includes(body.lang) ? body.lang : "fr",
     sources: Array.isArray(body.sources) ? body.sources : undefined,
   };
 

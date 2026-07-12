@@ -6,9 +6,12 @@
 
 import { NextResponse } from "next/server";
 import { benchmark } from "@/lib/benchmark";
+import type { Lang } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // la recherche web peut prendre quelques secondes
+
+const LANGS: Lang[] = ["fr", "en", "de", "es", "it"];
 
 export async function POST(request: Request) {
   let body: { merchant?: string; category?: string; monthly?: number; lang?: string };
@@ -24,7 +27,7 @@ export async function POST(request: Request) {
   }
   const category = String(body.category ?? "outil SaaS");
   const monthly = Number(body.monthly ?? 0);
-  const lang = body.lang === "en" ? "en" : "fr";
+  const lang: Lang = LANGS.includes(body.lang as Lang) ? (body.lang as Lang) : "fr";
 
   const result = await benchmark(merchant, category, monthly, lang);
 

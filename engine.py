@@ -121,6 +121,28 @@ def cluster_amounts(txs):
     return clusters
 
 
+def _cluster_span(cluster):
+    """(debut, fin) en jours ordinaux couvertes par les dates d'un cluster."""
+    ords = [to_ordinal(get_date(t)) for t in cluster]
+    return min(ords), max(ords)
+
+
+def clusters_overlap_in_time(clusters):
+    """
+    True si au moins deux clusters de montants se CHEVAUCHENT dans le temps.
+    Chevauchement = abonnements reellement PARALLELES (consolidation).
+    Clusters SEQUENTIELS (l'un s'arrete quand l'autre commence) = le MEME
+    abonnement dont le prix a change (hausse) -> a NE PAS compter comme deux.
+    """
+    spans = [_cluster_span(c) for c in clusters]
+    for i in range(len(spans)):
+        for j in range(i + 1, len(spans)):
+            (a0, a1), (b0, b1) = spans[i], spans[j]
+            if a0 <= b1 and b0 <= a1:
+                return True
+    return False
+
+
 def cadence_of(median_interval):
     """
     A partir de l'ecart median (en jours) entre 2 prelevements, dit s'il s'agit
@@ -166,6 +188,66 @@ def subscription_cadence(cluster, op_dominant):
         factor, cad = cadence_of(med_int)
         return (factor, cad) if factor else None
     return None
+
+
+# --- Detection hausse silencieuse -----------------------------------------
+def detect_hausse(txs, factor=1.0):
+    """
+    Hausse silencieuse : sur un RECURRENT (marchand deja reconnu comme
+    abonnement), compare le montant de la 1re et de la derniere occurrence
+    (triees par date), TOUTES occurrences confondues -- jamais par cluster de
+    montant : une hausse > 15 % serait sinon scindee en deux clusters et ratee.
+    Seuil de declenchement : +5 %. Renvoie un dict ou None.
+
+    `factor` = facteur de cadence (1.0 mensuel, 1/3 trimestriel...). Le moteur
+    normalise tout en mensuel ; l'impact annuel du delta est donc lui aussi
+    normalise en mensuel AVANT l'annualisation x12.
+
+    Ne JAMAIS appeler sur un one-off : ce helper n'est invoque que pour des
+    marchands deja reconnus comme abonnements (>= 2 occ a cadence reguliere).
+    """
+    ordered = sorted(txs, key=get_date)
+    avant = get_amount(ordered[0])
+    apres = get_amount(ordered[-1])
+    if avant <= 0 or apres < avant * 1.05:
+        return None
+    return {
+        "pct": round((apres / avant - 1) * 100, 1),
+        "avant_eur": round(avant, 2),
+        "apres_eur": round(apres, 2),
+        # Impact annuel = delta normalise en mensuel (delta brut x facteur de
+        # cadence) x 12. Un abo trimestriel n'est donc pas sur-annualise.
+        "impact_annuel_eur": round((apres - avant) * factor * 12, 2),
+    }
+
+
+# --- Detection TVA deductible perdue (justificatifs manquants) --------------
+def tva_perdue_candidate(debits):
+    """
+    TVA deductible perdue : depenses PRO ou un justificatif etait requis
+    (attachment_required == True) mais absent (attachment_ids vide/absent).
+    Agrege : nombre de transactions, base TTC, TVA recuperable = base * 20/120.
+    Levier fiscal indicatif -> a confirmer avec un comptable. None si rien.
+    """
+    concerned = [
+        tx for tx in debits
+        if tx.get("attachment_required") is True
+        and not (tx.get("attachment_ids") or [])
+        and classify(merchant_key(tx)) == "PRO"
+    ]
+    if not concerned:
+        return None
+    base_ttc = sum(get_amount(t) for t in concerned)
+    tva = base_ttc * 20.0 / 120.0
+    if tva <= 0:
+        return None
+    return {
+        "transactions": len(concerned),
+        "base_ttc_eur": round(base_ttc, 2),
+        "tva_recuperable_eur": round(tva, 2),
+        "note": "TVA recuperable estimee (20%) sur depenses PRO sans justificatif "
+                "— a confirmer avec un comptable.",
+    }
 
 
 # --- Detection FX ----------------------------------------------------------
@@ -251,22 +333,60 @@ def analyze(transactions, window_days=WINDOW_DAYS):
             continue
 
         if sub_clusters:
-            consolidation = len(sub_clusters) >= 2
-            for c, (factor, cadence) in sub_clusters:
-                amounts = [get_amount(t) for t in c]
+            # Vrais abonnements PARALLELES seulement si les clusters de montants
+            # se chevauchent dans le temps. Sinon (clusters sequentiels), c'est le
+            # MEME abonnement dont le prix a change -> un seul abo + hausse, pas
+            # deux "consolidation" fantomes qui gonfleraient l'economie.
+            sub_only = [c for c, _ in sub_clusters]
+            parallel = len(sub_clusters) >= 2 and clusters_overlap_in_time(sub_only)
+
+            if parallel:
+                for c, (factor, cadence) in sub_clusters:
+                    amounts = [get_amount(t) for t in c]
+                    monthly = statistics.median(amounts) * factor
+                    cand = {
+                        "marchand": display,
+                        "categorie_ei": cat,
+                        "operation_type": op_dom,
+                        "nature": "consolidation",
+                        "occurrences": len(c),
+                        "cadence": cadence,
+                        "montant_mensuel": round(monthly, 2),
+                        "montant_optimisable_eur": round(monthly * 12, 2),
+                        "base": "mensuel x12 (annuel)",
+                        "niveau_confiance": confidence(len(c), amounts),
+                    }
+                    hausse = detect_hausse(c, factor)
+                    if hausse:
+                        cand["hausse"] = hausse
+                    abonnements.append(cand)
+            else:
+                # Un seul abonnement : mono-cluster, OU clusters sequentiels (meme
+                # abo dont le prix a change). La hausse est detectee au NIVEAU DU
+                # MARCHAND (toutes les occurrences recurrentes), avant le clustering
+                # par montant, pour ne pas rater une hausse > 15 %.
+                recurring_txs = [t for c, _ in sub_clusters for t in c]
+                factor, cadence = (subscription_cadence(recurring_txs, op_dom)
+                                   or sub_clusters[0][1])
+                amounts = [get_amount(t) for t in recurring_txs]
                 monthly = statistics.median(amounts) * factor
-                abonnements.append({
+                cand = {
                     "marchand": display,
                     "categorie_ei": cat,
                     "operation_type": op_dom,
-                    "nature": "consolidation" if consolidation else "abonnement",
-                    "occurrences": len(c),
+                    "nature": "abonnement",
+                    "occurrences": len(recurring_txs),
                     "cadence": cadence,
                     "montant_mensuel": round(monthly, 2),
                     "montant_optimisable_eur": round(monthly * 12, 2),
                     "base": "mensuel x12 (annuel)",
-                    "niveau_confiance": confidence(len(c), amounts),
-                })
+                    "niveau_confiance": confidence(len(recurring_txs), amounts),
+                }
+                # Hausse silencieuse : uniquement sur ce recurrent (jamais un one-off).
+                hausse = detect_hausse(recurring_txs, factor)
+                if hausse:
+                    cand["hausse"] = hausse
+                abonnements.append(cand)
         elif not had_doublon and len(txs) >= 2:
             # 3) depense variable repetee (voyage, resto, cash card...) : NON annualisee
             total = sum(get_amount(t) for t in txs)
@@ -292,12 +412,17 @@ def analyze(transactions, window_days=WINDOW_DAYS):
     doublons.sort(key=lambda c: c["montant_optimisable_eur"], reverse=True)
     variables.sort(key=lambda c: c.get("montant_observe_90j", 0), reverse=True)
 
-    return {
+    result = {
         "abonnements": abonnements,
         "doublons": doublons,
         "fx": fx_list,
         "variables": variables,
     }
+    # TVA deductible perdue (justificatifs manquants) : present seulement si > 0.
+    tva = tva_perdue_candidate(debits)
+    if tva:
+        result["tva_perdue"] = tva
+    return result
 
 
 # --- Entree / sortie -------------------------------------------------------
@@ -318,6 +443,7 @@ def _row(c):
 
 def print_report(res):
     ab, db, fx, var = res["abonnements"], res["doublons"], res["fx"], res["variables"]
+    tva = res.get("tva_perdue")
 
     print("\n=== ABONNEMENTS RECURRENTS (annualises x12) ===")
     print("{:<30} {:<12} {:>10} {:>12}  {:<13} {}".format(
@@ -327,6 +453,12 @@ def print_report(res):
     for c in ab + fx:
         total_ab += c["montant_optimisable_eur"]
         print(_row(c))
+        h = c.get("hausse")
+        if h:
+            print("   ^ HAUSSE SILENCIEUSE +{}% : {:.2f}E -> {:.2f}E "
+                  "(impact {:.2f}E/an)".format(
+                      h["pct"], h["avant_eur"], h["apres_eur"],
+                      h["impact_annuel_eur"]))
     print("-" * 92)
     print("Base annuelle optimisable (abonnements + FX) : {:.2f} EUR / an".format(total_ab))
 
@@ -348,6 +480,14 @@ def print_report(res):
                 c["marchand"][:30], c["categorie_ei"],
                 c["montant_observe_90j"], c["occurrences"]))
         print("(Ces montants ne sont PAS des economies : ce sont des depenses observees.)")
+
+    if tva:
+        print("\n=== TVA DEDUCTIBLE PERDUE (justificatifs PRO manquants) ===")
+        print("Transactions concernees : {}".format(tva["transactions"]))
+        print("Base TTC totale          : {:.2f} EUR".format(tva["base_ttc_eur"]))
+        print("TVA recuperable estimee  : {:.2f} EUR (20/120)".format(
+            tva["tva_recuperable_eur"]))
+        print("({})".format(tva["note"]))
 
 
 def main(argv):

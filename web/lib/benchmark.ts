@@ -71,9 +71,9 @@ async function searchLinkup(
   lang: Lang,
 ): Promise<{ summary: string; sources: BenchSource[] }> {
   const q =
-    lang === "en"
-      ? `${merchant} (${category}) official pricing per user per month 2026, and cheaper alternatives with their prices`
-      : `${merchant} (${category}) tarif officiel par utilisateur par mois 2026, et alternatives moins chères avec leurs prix`;
+    lang === "fr"
+      ? `${merchant} (${category}) tarif officiel par utilisateur par mois 2026, et alternatives moins chères avec leurs prix`
+      : `${merchant} (${category}) official pricing per user per month 2026, and cheaper alternatives with their prices`;
 
   const res = await fetch("https://api.linkup.so/v1/search", {
     method: "POST",
@@ -121,6 +121,36 @@ say so clearly — invent no figure.
 
 Answer in English, concisely: for each alternative, its name, the price (state the unit:
 /user/month, /month…) and where the information comes from.`,
+  de: `Du bist das Benchmark-Modul von Argentier. Du erhältst AUSSCHLIESSLICH den Namen eines
+Tools/Dienstes und seine Kategorie — nie personenbezogene Daten, und du forderst auch keine an.
+
+Deine Aufgabe: 2 bis 3 günstigere Alternativen mit gleichwertigem Nutzen finden, mit ihrem
+AKTUELLEN ÖFFENTLICHEN PREIS und dem Datum der Quelle. Nutze die Websuche. Zitiere deine Quellen.
+Gib offizielle Preise an (Preisseiten, aktuelle Vergleichsportale), keine Schätzungen. Findest
+du keinen belegten, datierten Preis, sage es klar — erfinde keine Zahl.
+
+Antworte auf Deutsch, prägnant: für jede Alternative den Namen, den Preis (mit Einheit:
+/Nutzer/Monat, /Monat…) und woher die Information stammt.`,
+  es: `Eres el módulo de benchmark de Argentier. Se te da ÚNICAMENTE el nombre de una
+herramienta/servicio y su categoría — nunca datos personales, y no debes pedirlos.
+
+Tu misión: encontrar de 2 a 3 alternativas más baratas de uso equivalente, con su PRECIO
+PÚBLICO ACTUAL y la fecha de la fuente. Usa la búsqueda web. Cita tus fuentes. Da tarifas
+oficiales (páginas de precios, comparadores recientes), no estimaciones. Si no encuentras un
+precio con fuente y fecha, dilo claramente — no inventes ninguna cifra.
+
+Responde en español, de forma concisa: para cada alternativa, su nombre, el precio (indicando
+la unidad: /usuario/mes, /mes…) y de dónde viene la información.`,
+  it: `Sei il modulo di benchmark di Argentier. Ti viene fornito SOLO il nome di uno
+strumento/servizio e la sua categoria — mai dati personali, e non devi chiederne.
+
+Il tuo compito: trovare 2-3 alternative più economiche a uso equivalente, con il loro PREZZO
+PUBBLICO ATTUALE e la data della fonte. Usa la ricerca web. Cita le tue fonti. Fornisci tariffe
+ufficiali (pagine dei prezzi, comparatori recenti), non stime. Se non trovi un prezzo con fonte
+e data, dillo chiaramente — non inventare alcuna cifra.
+
+Rispondi in italiano, in modo conciso: per ogni alternativa, il nome, il prezzo (indicando
+l'unità: /utente/mese, /mese…) e da dove proviene l'informazione.`,
 };
 
 const EXTRACT_SCHEMA = {
@@ -145,20 +175,43 @@ const EXTRACT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const NOTE = {
+const NOTE: Record<"noKey" | "webDown" | "noSource", Record<Lang, string>> = {
   noKey: {
     fr: "Non vérifié — clé Anthropic absente (benchmark désactivé).",
     en: "Not verified — Anthropic key missing (benchmark disabled).",
+    de: "Nicht verifiziert — Anthropic-Schlüssel fehlt (Benchmark deaktiviert).",
+    es: "No verificado — falta la clave de Anthropic (benchmark desactivado).",
+    it: "Non verificato — chiave Anthropic assente (benchmark disattivato).",
   },
   webDown: {
     fr: "Non vérifié — recherche web indisponible.",
     en: "Not verified — web search unavailable.",
+    de: "Nicht verifiziert — Websuche nicht verfügbar.",
+    es: "No verificado — búsqueda web no disponible.",
+    it: "Non verificato — ricerca web non disponibile.",
   },
   noSource: {
     fr: "Non vérifié — aucune source datée trouvée. Ne pas afficher de prix.",
     en: "Not verified — no dated source found. Do not display a price.",
+    de: "Nicht verifiziert — keine datierte Quelle gefunden. Keinen Preis anzeigen.",
+    es: "No verificado — no se encontró ninguna fuente con fecha. No mostrar precio.",
+    it: "Non verificato — nessuna fonte datata trovata. Non mostrare il prezzo.",
   },
 };
+
+/**
+ * Vrai/faux : l'alternative est en réalité le MÊME produit que le marchand
+ * (ex. « HeyGen Pro » quand on benchmarke « HeyGen »). On veut des CONCURRENTS,
+ * jamais le produit qu'on cherche à remplacer.
+ */
+function sameBrand(altName: string, merchant: string): boolean {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const alt = norm(altName);
+  // Marque = premier « mot » significatif du marchand (avant /, ×, +, espace…).
+  const brand = norm((merchant.split(/[\s/×·+|(]+/)[0] || merchant));
+  if (!alt || brand.length < 3) return false;
+  return alt.includes(brand) || brand.includes(alt);
+}
 
 export async function benchmark(
   merchant: string,
@@ -199,13 +252,13 @@ export async function benchmark(
           {
             role: "user",
             content:
-              lang === "en"
-                ? `Current tool: "${merchant}" (category: ${category}). Observed cost: about €${Math.round(
+              lang === "fr"
+                ? `Outil actuel : "${merchant}" (catégorie : ${category}). Coût constaté : environ ${Math.round(
                     currentMonthly,
-                  )}/month. Find cheaper alternatives at equal usage, with a sourced, dated public price.`
-                : `Outil actuel : "${merchant}" (catégorie : ${category}). Coût constaté : environ ${Math.round(
+                  )} €/mois. Trouve des alternatives moins chères à usage équivalent, avec prix public sourcé et daté.`
+                : `Current tool: "${merchant}" (category: ${category}). Observed cost: about €${Math.round(
                     currentMonthly,
-                  )} €/mois. Trouve des alternatives moins chères à usage équivalent, avec prix public sourcé et daté.`,
+                  )}/month. Find cheaper alternatives at equal usage, with a sourced, dated public price.`,
           },
         ],
       } as unknown as Anthropic.MessageCreateParamsNonStreaming)) as Anthropic.Message;
@@ -242,7 +295,9 @@ export async function benchmark(
           text:
             "Tu extrais des prix depuis un texte de benchmark et une liste de sources numérotées. " +
             "Pour chaque alternative citée, donne le prix mensuel en euros (null si non chiffré), " +
-            "l'unité, et l'index [n] de la source qui l'atteste. N'invente aucun prix ni source.",
+            "l'unité, et l'index [n] de la source qui l'atteste. N'invente aucun prix ni source. " +
+            `IMPORTANT : ne retiens QUE des produits CONCURRENTS différents. Exclus totalement « ${merchant} » ` +
+            "et ses propres formules/paliers de prix (Free, Pro, Business, annuel…) — on cherche à le remplacer, pas à le lister.",
         },
       ],
       messages: [
@@ -258,7 +313,9 @@ export async function benchmark(
       const parsed = JSON.parse(txt.text) as {
         alternatives: Array<{ name: string; monthlyPrice: number | null; unit: string; sourceIndex: number }>;
       };
-      alternatives = parsed.alternatives.map((a) => {
+      alternatives = parsed.alternatives
+        .filter((a) => !sameBrand(a.name, merchant))
+        .map((a) => {
         const src = sources[a.sourceIndex] ?? sources[0];
         return {
           name: a.name,

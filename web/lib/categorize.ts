@@ -219,3 +219,44 @@ function ruleVerdict(m: MerchantInput): MerchantVerdict {
 export function categorizeByRules(merchants: MerchantInput[]): MerchantVerdict[] {
   return merchants.map(ruleVerdict);
 }
+
+// ---------------------------------------------------------------------------
+// Classification EI PRO / PERSO / A-CLARIFIER — MIROIR EXACT de engine.py.
+//
+// Règle #2 du projet : engine.py fait foi. Le périmètre « TVA perdue » ne
+// compte QUE les dépenses classées PRO (whitelist PRO_KEYWORDS, jamais
+// A-CLARIFIER ni « perso »). On réplique ici la même liste de mots-clés et la
+// même fonction classify() pour que engine.ts produise le MÊME résultat
+// qu'engine.py sur les mêmes transactions.
+// ---------------------------------------------------------------------------
+export const PRO_KEYWORDS = [
+  "hubspot", "apollo", "ringover", "google workspace", "google gsuite",
+  "notion", "slack", "aws", "amazon web services", "github", "gitlab",
+  "linkedin", "stripe", "ovh", "scaleway", "figma", "zoom", "microsoft",
+  "adobe", "openai", "anthropic", "vercel", "cloudflare", "sentry",
+  "calendly", "typeform", "mailchimp", "mailjet", "sendgrid", "twilio",
+  "make", "make.com", "zapier", "airtable", "pipedrive", "salesforce",
+  "intercom", "canva", "webflow", "instantly", "waalaxy", "loom", "replit",
+  "skool", "hiscox",
+];
+
+export const PERSO_KEYWORDS = [
+  "zara", "h&m", "uniqlo", "restaurant", "uber eats", "deliveroo",
+  "just eat", "carrefour", "monoprix", "leclerc", "franprix", "auchan",
+  "lidl", "intermarche", "boulangerie", "mcdonald", "starbucks", "fnac",
+  "decathlon", "sephora", "ikea", "netflix", "spotify", "disney+",
+  "pharmacie", "nespresso", "barber", "action",
+];
+
+export type EiClass = "PRO" | "PERSO" | "A-CLARIFIER";
+
+/**
+ * Miroir de engine.py:classify() — PRO l'emporte sur PERSO, défaut A-CLARIFIER.
+ * Source de vérité partagée pour le périmètre de la TVA perdue (règle #2).
+ */
+export function classifyEI(name: string): EiClass {
+  const n = name.toLowerCase().replace(/\s+/g, " ").trim();
+  if (PRO_KEYWORDS.some((k) => n.includes(k))) return "PRO";
+  if (PERSO_KEYWORDS.some((k) => n.includes(k))) return "PERSO";
+  return "A-CLARIFIER";
+}

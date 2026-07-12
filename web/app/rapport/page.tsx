@@ -6,8 +6,8 @@
  */
 
 import React, { useEffect, useMemo, useState } from "react";
-import type { AnalyzeResult, Lang } from "@/lib/types";
-import { eur as eurFmt, natureLabel, riskLabel } from "@/lib/i18n";
+import type { AnalyzeResult, Lang, Localized } from "@/lib/types";
+import { eur as eurFmt, LANGS, natureLabel, riskLabel } from "@/lib/i18n";
 
 const DICT = {
   fr: {
@@ -52,6 +52,69 @@ const DICT = {
     foot: "Argentier prepares, you decide. No banking action was triggered. Tax advice to be confirmed with your accountant. Data processed in Europe.",
     loading: "Loading report…",
   },
+  de: {
+    print: "Drucken / Als PDF speichern",
+    title: "Argentier — Aktionsplan",
+    heroCap: (m: string) => `pro Jahr zurückholbar (${m}/Monat)`,
+    kOut: "Ausgaben des Monats",
+    kRunrate: "Steuerbare Run-Rate",
+    kScore: "Gesundheitsscore",
+    kRunway: "Liquidität",
+    months: (n: number) => `${n} Monate`,
+    byNature: "Aufschlüsselung nach Art (beobachteter Monat)",
+    plan: "Sparplan — ausgewählte Hebel",
+    hLever: "Hebel",
+    hAction: "Aktion",
+    hPerMonth: "€ / Monat",
+    hRisk: "Risiko",
+    total: "Summe ausgewählter Hebel",
+    perMonth: "/ Monat",
+    flags: "Aufmerksamkeitspunkte (Score)",
+    foot: "Argentier bereitet vor, du entscheidest. Es wurde keine Bankaktion ausgelöst. Steuerhinweise mit deinem Steuerberater abstimmen. Daten werden in Europa verarbeitet.",
+    loading: "Bericht wird geladen…",
+  },
+  es: {
+    print: "Imprimir / Guardar como PDF",
+    title: "Argentier — Plan de acción",
+    heroCap: (m: string) => `recuperables / año (${m}/mes)`,
+    kOut: "Salidas del mes",
+    kRunrate: "Run-rate controlable",
+    kScore: "Puntuación de salud",
+    kRunway: "Liquidez",
+    months: (n: number) => `${n} meses`,
+    byNature: "Desglose por naturaleza (mes observado)",
+    plan: "Plan de ahorro — palancas seleccionadas",
+    hLever: "Palanca",
+    hAction: "Acción",
+    hPerMonth: "€ / mes",
+    hRisk: "Riesgo",
+    total: "Total de palancas seleccionadas",
+    perMonth: "/ mes",
+    flags: "Puntos de vigilancia (score)",
+    foot: "Argentier prepara, tú decides. No se ha activado ninguna acción bancaria. Consejos fiscales a validar con tu asesor. Datos procesados en Europa.",
+    loading: "Cargando el informe…",
+  },
+  it: {
+    print: "Stampa / Salva come PDF",
+    title: "Argentier — Piano d'azione",
+    heroCap: (m: string) => `recuperabili / anno (${m}/mese)`,
+    kOut: "Uscite del mese",
+    kRunrate: "Run-rate gestibile",
+    kScore: "Punteggio di salute",
+    kRunway: "Liquidità",
+    months: (n: number) => `${n} mesi`,
+    byNature: "Ripartizione per natura (mese osservato)",
+    plan: "Piano di risparmio — leve selezionate",
+    hLever: "Leva",
+    hAction: "Azione",
+    hPerMonth: "€ / mese",
+    hRisk: "Rischio",
+    total: "Totale leve selezionate",
+    perMonth: "/ mese",
+    flags: "Punti di attenzione (score)",
+    foot: "Argentier prepara, tu decidi. Nessuna azione bancaria è stata avviata. Consigli fiscali da validare con il tuo commercialista. Dati trattati in Europa.",
+    loading: "Caricamento del report…",
+  },
 };
 
 export default function Rapport() {
@@ -61,8 +124,9 @@ export default function Rapport() {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("lang");
     const saved = window.localStorage.getItem("argentier-lang");
-    const chosen = q === "en" || q === "fr" ? q : saved === "en" || saved === "fr" ? saved : "fr";
-    setLang(chosen as Lang);
+    const isLang = (v: string | null): v is Lang => !!v && (LANGS as string[]).includes(v);
+    const chosen: Lang = isLang(q) ? q : isLang(saved) ? saved : "fr";
+    setLang(chosen);
     fetch("/api/analyze")
       .then((r) => r.json())
       .then(setData)
@@ -71,6 +135,8 @@ export default function Rapport() {
 
   const t = DICT[lang];
   const eur = (n: number) => eurFmt(n, lang);
+  // de/es/it retombent sur l'anglais pour les Localized (fr/en only).
+  const loc = (x: Localized) => x[lang as "fr" | "en"] ?? x.en;
   const active = useMemo(() => (data ? data.levers.filter((l) => l.active) : []), [data]);
   const monthly = active.reduce((s, l) => s + l.saving, 0);
   const annual = monthly * 12;
@@ -98,7 +164,7 @@ export default function Rapport() {
         <div>
           <h1 className="rap-brand">{t.title}</h1>
           <p className="rap-sub">
-            {data.account.name} · {data.account.bank} · {data.window.label[lang]}
+            {data.account.name} · {data.account.bank} · {loc(data.window.label)}
           </p>
         </div>
         <div className="rap-hero">
@@ -162,7 +228,7 @@ export default function Rapport() {
           <h2 className="rap-h2">{t.flags}</h2>
           <ul className="rap-list">
             {data.score.drivers.map((d, i) => (
-              <li key={i}>{d[lang]}</li>
+              <li key={i}>{loc(d)}</li>
             ))}
           </ul>
         </>
