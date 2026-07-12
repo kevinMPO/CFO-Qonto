@@ -47,7 +47,7 @@ Each suggestion carries **its source and confidence level**, and ends with
 
 ## Demo
 
-📹 **Demo video — attached to this pull request** (2 min 35).
+📹 **[Watch the demo](https://github.com/user-attachments/assets/f78db9e3-449e-4744-bc34-13cdd2d09c62)** (2 min 35).
 
 The Qonto MCP connected and **read-only**, then the skill running end-to-end on **de-identified
 demo data** (NIMBUS SAS — a small French company), from a single prompt to the final report.
