@@ -72,8 +72,8 @@ async function searchLinkup(
 ): Promise<{ summary: string; sources: BenchSource[] }> {
   const q =
     lang === "fr"
-      ? `${merchant} (${category}) tarif officiel par utilisateur par mois 2026, et alternatives moins chères avec leurs prix`
-      : `${merchant} (${category}) official pricing per user per month 2026, and cheaper alternatives with their prices`;
+      ? `Quelles sont les 3 meilleures alternatives MOINS CHÈRES à "${merchant}" (catégorie : ${category}) en 2026 ? Pour chaque CONCURRENT (jamais ${merchant} lui-même), donne son nom, son prix mensuel public actuel (par utilisateur si applicable) et l'URL de sa page tarifs.`
+      : `What are the 3 best CHEAPER alternatives to "${merchant}" (category: ${category}) in 2026? For each COMPETITOR (never ${merchant} itself), give its name, its current public monthly price (per user if applicable) and its pricing-page URL.`;
 
   const res = await fetch("https://api.linkup.so/v1/search", {
     method: "POST",
@@ -81,22 +81,25 @@ async function searchLinkup(
       Authorization: `Bearer ${process.env.LINKUP_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ q, depth: "standard", outputType: "searchResults" }),
+    // sourcedAnswer = réponse synthétisée (liste de concurrents + prix) + sources.
+    // Bien plus exploitable par l'extraction que des snippets bruts (searchResults).
+    body: JSON.stringify({ q, depth: "standard", outputType: "sourcedAnswer" }),
   });
   if (!res.ok) throw new Error(`Linkup ${res.status}`);
 
   const data = (await res.json()) as {
-    results?: Array<{ name?: string; url?: string; content?: string }>;
+    answer?: string;
+    sources?: Array<{ name?: string; url?: string; snippet?: string }>;
   };
-  const results = (data.results ?? []).filter((r) => r.url).slice(0, 6);
-  const sources: BenchSource[] = results.map((r) => ({
-    title: r.name ?? r.url!,
-    url: r.url!,
-    date: yearFrom(r.content ?? ""),
+  const srcs = (data.sources ?? []).filter((s) => s.url).slice(0, 6);
+  const sources: BenchSource[] = srcs.map((s) => ({
+    title: s.name ?? s.url!,
+    url: s.url!,
+    date: yearFrom(s.snippet ?? ""),
   }));
-  const summary = results
-    .map((r) => `${r.name ?? ""}: ${(r.content ?? "").slice(0, 700)}`)
-    .join("\n\n");
+  const summary =
+    (data.answer ?? "").trim() ||
+    srcs.map((s) => `${s.name ?? ""}: ${(s.snippet ?? "").slice(0, 500)}`).join("\n\n");
   return { summary, sources };
 }
 

@@ -985,6 +985,20 @@ export default function Argentier() {
                         </li>
                       ))}
                     </ul>
+                  ) : bench.sources.length > 0 ? (
+                    <>
+                      <p className="arg-bench-hint">{T.benchNoAlt}</p>
+                      <ul className="arg-bench-list">
+                        {bench.sources.slice(0, 4).map((s, i) => (
+                          <li key={i}>
+                            <span className="arg-bench-alt">{s.title}</span>
+                            <a href={s.url} target="_blank" rel="noopener" className="arg-bench-src">
+                              {T.benchSourceLink(s.date)}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
                   ) : (
                     <p className="arg-bench-hint">{bench.note ?? T.benchNone}</p>
                   )}
