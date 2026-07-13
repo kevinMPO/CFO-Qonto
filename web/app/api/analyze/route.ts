@@ -10,8 +10,6 @@
 // ---------------------------------------------------------------------------
 
 import { NextResponse } from "next/server";
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
 import { MOCK } from "@/lib/mock";
 import { build, toMerchantInputs } from "@/lib/engine";
 import {
@@ -34,24 +32,6 @@ function windowLabel(days: number): Localized {
     fr: `${fmt(start, "fr-FR")} – ${fmt(end, "fr-FR")} ${end.getFullYear()}`,
     en: `${fmt(start, "en-US")} – ${fmt(end, "en-US")}, ${end.getFullYear()}`,
   };
-}
-
-interface Snapshot {
-  account: { name: string; bank: string; balance: number };
-  txs: Tx[];
-}
-
-/** Lit un export réel Qonto déposé localement (tiré via le MCP). */
-function readSnapshot(): Snapshot | null {
-  const p = join(process.cwd(), "data", "qonto-snapshot.json");
-  if (!existsSync(p)) return null;
-  try {
-    const snap = JSON.parse(readFileSync(p, "utf8")) as Snapshot;
-    if (snap.account && Array.isArray(snap.txs)) return snap;
-  } catch (err) {
-    console.error("Snapshot Qonto illisible :", err);
-  }
-  return null;
 }
 
 /** OBSERVE terminé → CATÉGORISE (Claude) → CALCULE (engine.ts). */
@@ -94,13 +74,7 @@ async function runPipeline(
 async function analyze() {
   const windowDays = Number(process.env.ARGENTIER_WINDOW_DAYS || 60);
 
-  // 1) Snapshot réel (tiré via le MCP Qonto) — prioritaire.
-  const snap = readSnapshot();
-  if (snap) {
-    return runPipeline(snap.account, snap.txs, windowDays);
-  }
-
-  // 2) Business API live (clés .env).
+  // Business API live (clés .env) — sinon démo mock.
   const qonto = readQontoConfig();
   if (qonto) {
     const [org, txs] = await Promise.all([

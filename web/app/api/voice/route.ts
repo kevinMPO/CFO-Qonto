@@ -5,7 +5,6 @@
 // l'audio (mp3). Modèle multilingue → FR/EN/DE/ES/IT.
 // ---------------------------------------------------------------------------
 
-export const runtime = "nodejs";
 
 // Voix multilingue par défaut (« Rachel ») — surchargée par ELEVENLABS_VOICE_ID.
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";

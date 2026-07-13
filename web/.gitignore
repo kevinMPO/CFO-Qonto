@@ -13,3 +13,7 @@ next-env.d.ts
 # données bancaires réelles (snapshot Qonto) — jamais commitées
 /data/qonto-snapshot.json
 /data/flows-*.json
+
+# Cloudflare / OpenNext build artefacts
+.open-next/
+.vercel/

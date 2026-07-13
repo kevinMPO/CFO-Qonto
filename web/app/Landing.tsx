@@ -23,6 +23,7 @@ const L = (lang: Lang, m: Record<Lang, string>) => m[lang] ?? m.en;
 export default function Landing({ onDemo }: { onDemo: () => void }) {
   const [lang, setLang] = useState<Lang>("fr");
   const [joined, setJoined] = useState(false);
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("argentier-lang") : null;
@@ -148,17 +149,49 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
             it: "Collega il tuo vero conto Qonto",
           })}
         </h2>
-        <button className="lp-wait-btn" onClick={() => setJoined(true)} disabled={joined}>
-          {joined
-            ? L(lang, { fr: "✓ Tu es sur la liste", en: "✓ You're on the list", de: "✓ Du bist auf der Liste", es: "✓ Estás en la lista", it: "✓ Sei nella lista" })
-            : L(lang, {
-                fr: "Rejoindre la liste d'attente : Connecter son compte Qonto",
-                en: "Join the waitlist: Connect your Qonto account",
-                de: "Warteliste beitreten: Qonto-Konto verbinden",
-                es: "Unirse a la lista: Conectar tu cuenta Qonto",
-                it: "Iscriviti alla lista: Collega il tuo conto Qonto",
+        {joined ? (
+          <p className="lp-wait-done">
+            ✓ {L(lang, { fr: "Tu es sur la liste", en: "You're on the list", de: "Du bist auf der Liste", es: "Estás en la lista", it: "Sei nella lista" })}
+          </p>
+        ) : (
+          <>
+            <form
+              className="lp-wait-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (email.includes("@")) setJoined(true);
+              }}
+            >
+              <input
+                className="lp-wait-input"
+                type="email"
+                required
+                placeholder={L(lang, { fr: "ton@email.com", en: "you@email.com", de: "du@email.com", es: "tu@email.com", it: "tua@email.com" })}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                aria-label="email"
+              />
+              <button className="lp-wait-btn" type="submit">
+                {L(lang, {
+                  fr: "Rejoindre : connecter Qonto",
+                  en: "Join: connect Qonto",
+                  de: "Beitreten: Qonto verbinden",
+                  es: "Unirse: conectar Qonto",
+                  it: "Iscriviti: collega Qonto",
+                })}
+              </button>
+            </form>
+            <p className="lp-wait-hint">
+              {L(lang, {
+                fr: "Pour rejoindre la liste d'attente, connecte ton email.",
+                en: "To join the waitlist, connect your email.",
+                de: "Um der Warteliste beizutreten, gib deine E-Mail an.",
+                es: "Para unirte a la lista de espera, conecta tu email.",
+                it: "Per iscriverti alla lista d'attesa, collega la tua email.",
               })}
-        </button>
+            </p>
+          </>
+        )}
         <p className="lp-disclaimer">
           {L(lang, {
             fr: "Données de démonstration — configure Qonto + Anthropic dans .env pour brancher ton vrai compte. Données traitées en Europe, jamais utilisées pour entraîner un modèle. Conseils fiscaux à valider avec ton comptable.",
@@ -251,6 +284,13 @@ const CSS = `
   font-weight:700;padding:16px 28px;cursor:pointer;max-width:100%;transition:transform .08s ease,opacity .1s;box-shadow:0 8px 30px color-mix(in srgb,var(--yellow) 26%,transparent);}
 .lp-wait-btn:hover:not(:disabled){transform:translateY(-2px);}
 .lp-wait-btn:disabled{opacity:.7;cursor:default;background:#2a2a27;color:var(--yellow);box-shadow:none;}
+.lp-wait-form{display:flex;gap:10px;max-width:540px;margin:0 auto;flex-wrap:wrap;justify-content:center;}
+.lp-wait-input{flex:1;min-width:220px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);
+  border-radius:99px;font-family:inherit;font-size:15px;padding:15px 22px;outline:none;transition:border-color .12s;}
+.lp-wait-input::placeholder{color:var(--ink2);}
+.lp-wait-input:focus{border-color:var(--yellow);}
+.lp-wait-hint{font-size:12.5px;color:var(--ink2);margin:12px 0 0;}
+.lp-wait-done{font-family:'Space Grotesk';font-weight:700;font-size:clamp(18px,3vw,24px);color:var(--yellow);margin:0;}
 .lp-disclaimer{font-size:12px;color:var(--ink2);max-width:560px;margin:22px auto 0;line-height:1.6;}
 .lp-proto{font-family:'Space Grotesk';font-weight:600;font-size:13px;color:var(--yellow);margin:14px 0 0;letter-spacing:.02em;}
 
