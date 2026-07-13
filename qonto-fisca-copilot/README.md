@@ -84,8 +84,26 @@ report                     → nudges + niches, each with source + confidence
 
 ## Safety & guardrails
 
-- **Read-only by design** — the skill declares and uses only read tools; it never moves
-  money (the Qonto MCP couldn't anyway — outbound transfers aren't exposed).
+**Read-only is a thesis here, not a limitation.** Much of the interesting work in agentic
+finance right now is about making a *write-capable* agent safe. This skill takes the other
+road: **it has no write tool at all.** The safest financial agent is the one that
+structurally *cannot* move your money — and it can still tell you exactly what you are
+missing.
+
+But read-only protects **Qonto**. It does not, on its own, protect **the user** — so:
+
+- **Untrusted content is data, never instructions.** This skill deliberately opens the two
+  classic injection vectors: **supplier receipts** (a PDF someone *else* wrote) and **web
+  pages** (merchant lookups). A hostile receipt, label or search result can carry something
+  shaped like a command. The skill extracts only what it needs — *a city, an address, a VAT
+  figure* — and **reports anything instruction-like as a suspicious document instead of
+  obeying it.** It never follows a link or executes code found in an attachment.
+- **Presigned attachment URLs are credentials.** `get_attachment` returns a short-lived
+  presigned S3 URL — Qonto's own docs say to treat it like a password. It is never printed,
+  logged, stored or transmitted.
+- **Egress is minimal and stated.** The only thing that leaves the machine is a **merchant
+  name**, sent to a web search to resolve a city. No amounts, no counterparties, no IBAN,
+  no balance, no organization name.
 - **Advisory, not tax advice** — every suggestion is a prompt to discuss with the
   accountant, never a certainty.
 - **No invented figures** — amounts come only from the sourced rules file; uncertain
