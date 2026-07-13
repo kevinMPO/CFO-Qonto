@@ -12,7 +12,7 @@
 ---
 
 ## Table of contents
-- [What it is](#what-it-is) · [Surfaces](#surfaces) · [The loop](#the-loop)
+- [What it is](#what-it-is) · [Surfaces](#surfaces) · [The loop](#the-loop) · [North Star metric](#north-star--annualized-proven-savings-aps)
 - [Architecture](#architecture) — [system](#system-overview) · [user flow](#user-flow) · [data flow](#data-flow)
 - [The 4 rules](#the-4-non-negotiable-rules) · [Tech stack](#tech-stack)
 - [Setup](#setup) · [File structure](#file-structure) · [Deploy](#deploy) · [Safety](#safety)
@@ -47,6 +47,80 @@ Qonto MCP   engine.py   Linkup MCP   sourced      human    decisions   re-read &
 (read-only) (the euros)  (sourced+    card        approves  .json       prove the
                           dated)                   & sends              money dropped
 ```
+
+---
+
+## North Star — Annualized Proven Savings (APS)
+
+> **One number: the euros Argentier put back in the account, where the *drop* is proven on the
+> real Qonto statement at J+30 and the *annualization* is the deterministic engine's — never the
+> LLM's, never "money merely found".**
+
+**North Star Metric (NSM): `economies_prouvees_eur_an`** — the sum of engine-computed
+`montant_optimisable_eur` over decisions a human approved *and sent*, where a **J+30 read-only
+re-read of the real Qonto account confirmed the recurring debit dropped or vanished** for the
+elapsed cycle(s).
+
+```
+NSM = Σ montant_optimisable_eur   over decisions where statut = "prouve"
+Revenue = 5% × NSM        → user value == business value, by construction ("no savings, no cost")
+```
+
+**Two honest halves — what is proven vs. what is projected.** At J+30, `/verify`
+(`.claude/commands/verify.md`) re-pulls 90 d of flows read-only, re-runs `engine.py`, and proves the
+**monthly drop** actually left the statement. The **×12** on top is `engine.py`'s deterministic
+annualization of that proven monthly delta — a projection, not a statement fact. We say *proven
+drop, engine-annualized* — not "a proven annual number a customer reads on their statement" (they
+read one cycle; the year is the engine's extrapolation).
+
+**Which levers are NSM-eligible** (only those with an observable statement drop):
+
+| Lever | In NSM? | Why |
+|---|---|---|
+| Recurring sub (`abonnement`, ×12) | ✅ annualized | debit vanishes/shrinks — observable in flows |
+| FX fees (`fx`, ×365/90) | ✅ annualized | `fx_card` fees fall — observable |
+| Renegotiated hike (`hausse`) | ✅ **only if** the debit visibly drops | a renegotiated amount is observable; a merely *avoided* future hike is **not** → off-NSM "avoided-cost" register |
+| Duplicate (`doublon`) | ⚠️ **one-shot recovery, not ×12** | a same-day double charge has nothing recurring to "disappear"; counted in a separate one-shot proven total, never annualized |
+| Recoverable VAT (`tva_perdue`) | ❌ **excluded** | a tax-filing outcome, invisible in Qonto flows — `/verify` cannot observe it; tracked off-ledger, accountant-confirmed |
+
+- **Leading indicator** — `economies_en_attente_eur_an`: the aggregate of approved-but-not-yet-proven
+  euros, the queue `/verify` draws from. NSM is **lagging by design** (a real proof needs ~30 real
+  days of post-action observation — that latency is the feature).
+- **Integrity — one hard lock, honestly graded.** The euro counts only if the money stopped leaving
+  a **read-only** Qonto account Argentier *cannot write to* — enforced at two layers: every write
+  tool hard-denied in `settings.json` (`deny` > `allow`) **and** the Qonto MCP server itself moves no
+  money. That is the one architectural guarantee. The other controls — engine-as-sole-arithmetic
+  (rule #2, pinned by 24 unit tests), the human gate, net-of-reversal — are **conventions or backlog
+  items**, listed as such below, not dressed up as architecture.
+
+**Input tree** (each factor names where it is computed): audits run → qualified source+dated levers
+per audit (`engine.py analyze()`) → human approval rate at the GATE (`decisions.json statut`) →
+**J+30 proof rate** (`verify.md`) → durability × avg proven € per lever.
+
+**Activation** = the first `/audit` that surfaces ≥1 `engine.py` lever with a sourced+dated Linkup
+benchmark **and** a human approves ≥1 recommendation into `drafts/` — logged as the first
+`decisions.json` entry with **`statut = "approuve"`** (matching `audit.md` step f; there is no
+per-decision `en_attente` state — pending lives only in the aggregate scalar). **Aha** = the first
+`/verify` that flips `economies_prouvees_eur_an` from 0 to positive: a drop proven on the user's own
+statement, by an agent never allowed to touch the money.
+
+**Guardrails, graded by real enforcement** (not all are architectural — saying so is the point):
+
+| Bound | Enforcement | Grade |
+|---|---|---|
+| Qonto money-movement = 0 | `settings.json` deny + Qonto MCP cannot move money | **HARD** (two layers) |
+| Qonto write tools invoked = 0 | 8-read-tool allowlist | **HARD** |
+| PII to web = 0 | `audit.md` prompt only (`linkup`/`brightdata` args unrestricted) | **SOFT** — backlog: arg filter |
+| Autonomous sends = 0 | `drafts/` label convention; non-Qonto send MCPs **not** denied | **SOFT** — backlog: deny Gmail/Instantly/Apollo |
+| Displayed € = engine € | rule #2 convention + 24 engine tests | **SOFT+tests** — backlog: assert displayed==engine |
+| Net-of-reversal | not implemented (`/verify` re-reads only `approuve`) | **BACKLOG** |
+| Untouchable suppliers respected | `profile.json` prompt-checked (empty; engine doesn't read it) | **SOFT** — backlog: wire into engine |
+
+> **Receivables metrics** (DSO / *délai moyen de paiement*, *impayés*, acceptance rate) are **not**
+> in this NSM — Argentier is cost-recovery today and computes none of them from its own data. They
+> are scoped to a **future receivables module** (roadmap), the day it reads `list_client_invoices`.
+> See [`docs/product-metrics.md`](docs/product-metrics.md) for the full framework, honest
+> instrumentation status, and hardening backlog.
 
 ---
 
@@ -204,7 +278,7 @@ DAF Qonto/
 ├─ my-app/                   # MCP server on Cloudflare Workers (McpAgent)
 │  └─ src/index.ts + src/lib # engine reused verbatim
 ├─ scripts/create-cma-agent.mjs   # real Claude Managed Agent
-├─ docs/                     # PRD · CMA spec · landing/Cloudflare · voice setup
+├─ docs/                     # product-metrics (North Star) · PRD · CMA spec · landing/Cloudflare · voice setup
 └─ data/, drafts/            # real flows, ledger, deliverables (gitignored)
 ```
 
