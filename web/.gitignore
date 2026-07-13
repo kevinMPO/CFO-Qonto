@@ -17,3 +17,4 @@ next-env.d.ts
 # Cloudflare / OpenNext build artefacts
 .open-next/
 .vercel/
+.vercel

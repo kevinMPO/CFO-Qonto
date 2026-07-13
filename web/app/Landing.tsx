@@ -24,6 +24,31 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
   const [lang, setLang] = useState<Lang>("fr");
   const [joined, setJoined] = useState(false);
   const [email, setEmail] = useState("");
+  // Gate email au clic « Voir la démo » → stocké dans Cloudflare KV.
+  const [gate, setGate] = useState(false);
+  const [demoEmail, setDemoEmail] = useState("");
+  const [sending, setSending] = useState(false);
+
+  const WAITLIST_URL = "https://argentier-mcp.bonjour-e83.workers.dev/waitlist";
+  const storeEmail = async (address: string, source: string) => {
+    try {
+      await fetch(WAITLIST_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: address.trim().toLowerCase(), lang, source }),
+      });
+    } catch {
+      /* réseau — on ne bloque pas l'utilisateur */
+    }
+  };
+  const submitDemo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!demoEmail.includes("@")) return;
+    setSending(true);
+    await storeEmail(demoEmail, "voir-demo");
+    setSending(false);
+    onDemo();
+  };
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("argentier-lang") : null;
@@ -62,7 +87,7 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
               </button>
             ))}
           </div>
-          <button className="lp-demo-top" onClick={onDemo}>
+          <button className="lp-demo-top" onClick={() => setGate(true)}>
             {L(lang, { fr: "Voir la démo", en: "See the demo", de: "Demo ansehen", es: "Ver la demo", it: "Vedi la demo" })} →
           </button>
         </div>
@@ -90,7 +115,7 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
           })}
         </p>
         <div className="lp-cta">
-          <button className="lp-demo" onClick={onDemo}>
+          <button className="lp-demo" onClick={() => setGate(true)}>
             {L(lang, { fr: "Voir la démo", en: "See the demo", de: "Demo ansehen", es: "Ver la demo", it: "Vedi la demo" })}
           </button>
           <a className="lp-cta-ghost" href="#waitlist">
@@ -159,7 +184,10 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
               className="lp-wait-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                if (email.includes("@")) setJoined(true);
+                if (email.includes("@")) {
+                  storeEmail(email, "waitlist");
+                  setJoined(true);
+                }
               }}
             >
               <input
@@ -211,6 +239,46 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
           })}
         </p>
       </section>
+
+      {/* Gate email — au clic « Voir la démo » (stocké dans Cloudflare KV) */}
+      {gate && (
+        <div className="lp-gate" role="dialog" aria-modal="true" onClick={() => !sending && setGate(false)}>
+          <div className="lp-gate-box" onClick={(e) => e.stopPropagation()}>
+            <p className="lp-gate-title">
+              {L(lang, { fr: "Accède à la démo", en: "Access the demo", de: "Zur Demo", es: "Accede a la demo", it: "Accedi alla demo" })}
+            </p>
+            <p className="lp-gate-sub">
+              {L(lang, {
+                fr: "Laisse ton email pour lancer la démo Argentier.",
+                en: "Leave your email to launch the Argentier demo.",
+                de: "Gib deine E-Mail an, um die Argentier-Demo zu starten.",
+                es: "Deja tu email para iniciar la demo de Argentier.",
+                it: "Lascia la tua email per avviare la demo di Argentier.",
+              })}
+            </p>
+            <form className="lp-gate-form" onSubmit={submitDemo}>
+              <input
+                className="lp-gate-input"
+                type="email"
+                required
+                autoFocus
+                placeholder={L(lang, { fr: "ton@email.com", en: "you@email.com", de: "du@email.com", es: "tu@email.com", it: "tua@email.com" })}
+                value={demoEmail}
+                onChange={(e) => setDemoEmail(e.target.value)}
+                aria-label="email"
+              />
+              <button className="lp-gate-btn" type="submit" disabled={sending}>
+                {sending
+                  ? "…"
+                  : L(lang, { fr: "Voir la démo →", en: "See the demo →", de: "Demo ansehen →", es: "Ver la demo →", it: "Vedi la demo →" })}
+              </button>
+            </form>
+            <button className="lp-gate-cancel" onClick={() => setGate(false)} disabled={sending}>
+              {L(lang, { fr: "Annuler", en: "Cancel", de: "Abbrechen", es: "Cancelar", it: "Annulla" })}
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer className="lp-foot">
         <Mark /> Argentier · Qonto × Anthropic MCP Hackathon
@@ -296,5 +364,17 @@ const CSS = `
 
 .lp-foot{border-top:1px solid var(--line);text-align:center;padding:28px;color:var(--ink2);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .lp-foot .lp-mark{width:18px;height:18px;color:var(--ink2);}
+.lp-gate{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
+.lp-gate-box{background:#1b1b19;border:1px solid var(--line);border-radius:18px;padding:28px;width:100%;max-width:420px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5);}
+.lp-gate-title{font-family:'Space Grotesk';font-weight:700;font-size:22px;color:var(--ink);margin:0 0 6px;}
+.lp-gate-sub{font-size:13.5px;color:var(--ink2);margin:0 0 18px;}
+.lp-gate-form{display:flex;flex-direction:column;gap:10px;}
+.lp-gate-input{border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);border-radius:12px;font-family:inherit;font-size:15px;padding:14px 18px;outline:none;transition:border-color .12s;}
+.lp-gate-input::placeholder{color:var(--ink2);}
+.lp-gate-input:focus{border-color:var(--yellow);}
+.lp-gate-btn{border:0;background:var(--yellow);color:#111110;border-radius:12px;font-family:inherit;font-size:16px;font-weight:700;padding:14px;cursor:pointer;transition:transform .08s ease,opacity .1s;}
+.lp-gate-btn:hover:not(:disabled){transform:translateY(-1px);}
+.lp-gate-btn:disabled{opacity:.7;cursor:progress;}
+.lp-gate-cancel{margin-top:12px;border:0;background:none;color:var(--ink2);font-family:inherit;font-size:13px;cursor:pointer;text-decoration:underline;}
 @media(prefers-reduced-motion:reduce){.lp-demo,.lp-wait-btn{transition:none;}}
 `;

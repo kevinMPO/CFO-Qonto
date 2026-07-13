@@ -142,11 +142,45 @@ export class ArgentierMCP extends McpAgent<Env, Record<string, never>, Record<st
   }
 }
 
+const CORS: Record<string, string> = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
 export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
+
+    // Liste d'attente — stocke l'email dans Cloudflare KV.
+    if (url.pathname === "/waitlist") {
+      if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405, headers: CORS });
+      }
+      let email = "";
+      let lang = "";
+      let source = "";
+      try {
+        const body = (await request.json()) as { email?: string; lang?: string; source?: string };
+        email = (body.email ?? "").trim().toLowerCase();
+        lang = (body.lang ?? "").slice(0, 5);
+        source = (body.source ?? "").slice(0, 40);
+      } catch {
+        /* body invalide */
+      }
+      if (!email.includes("@") || email.length < 5 || email.length > 200) {
+        return Response.json({ ok: false, error: "invalid_email" }, { status: 400, headers: CORS });
+      }
+      await env.WAITLIST.put(
+        `wl:${email}`,
+        JSON.stringify({ email, lang, source, at: new Date().toISOString() }),
+      );
+      return Response.json({ ok: true }, { headers: CORS });
+    }
+
     if (url.pathname === "/" || url.pathname === "/health") {
-      return new Response("Argentier MCP — Streamable HTTP sur POST /mcp");
+      return new Response("Argentier MCP — Streamable HTTP sur POST /mcp · POST /waitlist");
     }
     if (url.pathname.startsWith("/mcp")) {
       return ArgentierMCP.serve("/mcp", { binding: "ArgentierMCP" }).fetch(request, env, ctx);

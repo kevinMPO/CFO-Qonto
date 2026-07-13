@@ -10,4 +10,5 @@
 		"bindings": [{ "name": "ArgentierMCP", "class_name": "ArgentierMCP" }],
 	},
 	"migrations": [{ "tag": "v1", "new_sqlite_classes": ["ArgentierMCP"] }],
+	"kv_namespaces": [{ "binding": "WAITLIST", "id": "2654f9c6be0d425a921a5d732b8ce518" }],
 }
