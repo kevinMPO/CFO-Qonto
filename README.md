@@ -7,7 +7,7 @@
 >
 > _Prototype for the **Qonto × Anthropic MCP Hackathon**._ · **Operator acts. Analyst explains. Argentier optimizes.**
 
-▶ **[Watch the 3-min demo (Loom)](https://www.loom.com/share/b9f1a77d8eeb4dd5b0a8699f0c885123)** · Script → [`DEMO.md`](DEMO.md)
+🌐 **[Live · getargentier.com](https://www.getargentier.com)** — landing + one-click demo · ▶ **[3-min demo (Loom)](https://www.loom.com/share/b9f1a77d8eeb4dd5b0a8699f0c885123)** · Script → [`DEMO.md`](DEMO.md)
 
 ---
 
@@ -33,10 +33,11 @@ what makes every figure auditable.
 
 | Surface | What it is | State |
 |---|---|---|
+| **Live site** → **[getargentier.com](https://www.getargentier.com)** | Landing (`/`) + one-click demo (`/demo`): dashboard, **Autopilote**, natures waterfall, savings simulator, tracker board (drag & drop), ready-to-send letters, **5 languages** (FR/EN/DE/ES/IT), **ElevenLabs voice** | ✅ deployed (Vercel) |
 | **Claude Code Skill** (`/audit`, `/verify`) | The real agent: Qonto MCP (read-only) → `engine.py` → Linkup MCP → `drafts/` | ✅ works live |
-| **Web app** (`web/`) | Next.js dashboard + landing: run-rate, natures waterfall, savings simulator, tracker board, ready-to-send letters, **Autopilote demo**, **5 languages** (FR/EN/DE/ES/IT), **ElevenLabs voice** | ✅ |
-| **MCP server** (`my-app/`) | The deterministic engine exposed as an MCP server on **Cloudflare Workers** (`McpAgent`) — callable by any MCP client | ✅ built + tested |
-| **Managed Agent** (`scripts/`) | Script that creates a real **Claude Managed Agent** (hosted autopilot) | ✅ proof run |
+| **MCP server** (`my-app/`) | The deterministic engine exposed as an MCP server on **Cloudflare Workers** — [`argentier-mcp…workers.dev/mcp`](https://argentier-mcp.bonjour-e83.workers.dev/mcp), callable by any MCP client | ✅ live on Cloudflare |
+| **Waitlist** | Demo-gate email captured on click → stored in **Cloudflare KV** (`POST /waitlist` on the Worker) | ✅ live |
+| **Managed Agent** (`scripts/`) | Script that creates a real **Claude Managed Agent** (hosted autopilot) — verified run | ✅ proof run |
 
 ## The loop
 

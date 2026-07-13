@@ -154,6 +154,23 @@ export default function Argentier() {
   const [wl, setWl] = useState<string | null>(null);
   const [wlEmail, setWlEmail] = useState("");
   const [wlJoined, setWlJoined] = useState<Record<string, boolean>>({});
+  // Liste d'attente « connecter Qonto » (bas de page) → Cloudflare KV.
+  const [qEmail, setQEmail] = useState("");
+  const [qJoined, setQJoined] = useState(false);
+  const submitQonto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!qEmail.includes("@")) return;
+    try {
+      await fetch("https://argentier-mcp.bonjour-e83.workers.dev/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: qEmail.trim().toLowerCase(), lang, source: "connect-qonto-demo" }),
+      });
+    } catch {
+      /* réseau — on ne bloque pas */
+    }
+    setQJoined(true);
+  };
   // Voix ElevenLabs (TTS « explique-moi » + widget Q&A conditionnel)
   const [voiceState, setVoiceState] = useState<"idle" | "loading" | "playing">("idle");
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -805,6 +822,56 @@ export default function Argentier() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* Connecter son vrai compte Qonto — liste d'attente (email → Cloudflare KV) */}
+      <section className="arg-card arg-qwl">
+        <h3 className="arg-qwl-title">
+          {L({
+            fr: "Branche ton vrai compte Qonto",
+            en: "Connect your real Qonto account",
+            de: "Verbinde dein echtes Qonto-Konto",
+            es: "Conecta tu cuenta Qonto real",
+            it: "Collega il tuo vero conto Qonto",
+          })}
+        </h3>
+        {qJoined ? (
+          <p className="arg-qwl-done">
+            ✓ {L({ fr: "Tu es sur la liste", en: "You're on the list", de: "Du bist auf der Liste", es: "Estás en la lista", it: "Sei nella lista" })}
+          </p>
+        ) : (
+          <>
+            <form className="arg-qwl-form" onSubmit={submitQonto}>
+              <input
+                className="arg-qwl-input"
+                type="email"
+                required
+                placeholder={L({ fr: "ton@email.com", en: "you@email.com", de: "du@email.com", es: "tu@email.com", it: "tua@email.com" })}
+                value={qEmail}
+                onChange={(e) => setQEmail(e.target.value)}
+                aria-label="email"
+              />
+              <button className="arg-qwl-btn" type="submit">
+                {L({
+                  fr: "Rejoindre : connecter Qonto",
+                  en: "Join: connect Qonto",
+                  de: "Beitreten: Qonto verbinden",
+                  es: "Unirse: conectar Qonto",
+                  it: "Iscriviti: collega Qonto",
+                })}
+              </button>
+            </form>
+            <p className="arg-qwl-hint">
+              {L({
+                fr: "Pour rejoindre la liste d'attente, connecte ton email.",
+                en: "To join the waitlist, connect your email.",
+                de: "Um der Warteliste beizutreten, gib deine E-Mail an.",
+                es: "Para unirte a la lista de espera, conecta tu email.",
+                it: "Per iscriverti alla lista d'attesa, collega la tua email.",
+              })}
+            </p>
+          </>
+        )}
       </section>
 
       <footer className="arg-foot">
@@ -1856,6 +1923,16 @@ const CSS = `
 .arg-flux-val.danger{color:var(--c-clay);} .arg-flux-val.amber{color:var(--c-amber);}
 
 .arg-foot{font-size:11px;color:var(--c-ink2);text-align:center;margin-top:20px;}
+.arg-qwl{text-align:center;}
+.arg-qwl-title{font-family:'Space Grotesk';font-weight:600;font-size:clamp(20px,3vw,28px);color:var(--c-ink);margin:0 0 18px;letter-spacing:-.01em;}
+.arg-qwl-form{display:flex;gap:10px;max-width:520px;margin:0 auto;flex-wrap:wrap;justify-content:center;}
+.arg-qwl-input{flex:1;min-width:220px;border:1px solid var(--c-line-strong);background:#fff;color:var(--c-ink);border-radius:99px;font-family:inherit;font-size:15px;padding:14px 20px;outline:none;transition:border-color .12s;}
+.arg-qwl-input::placeholder{color:var(--c-ink2);}
+.arg-qwl-input:focus{border-color:var(--c-vert);}
+.arg-qwl-btn{border:1px solid var(--c-vert);background:var(--c-vert);color:#fff;border-radius:99px;font-family:inherit;font-size:15px;font-weight:600;padding:14px 22px;cursor:pointer;white-space:nowrap;transition:transform .08s ease;}
+.arg-qwl-btn:hover{transform:translateY(-1px);}
+.arg-qwl-hint{font-size:12.5px;color:var(--c-ink2);margin:12px 0 0;}
+.arg-qwl-done{font-family:'Space Grotesk';font-weight:600;font-size:18px;color:var(--c-vert);margin:0;}
 
 .arg-lever-toggle:focus-visible,.arg-lever-letter:focus-visible,.arg-btn:focus-visible,.arg-cta:focus-visible,.arg-lang-btn:focus-visible,.arg-horizon input:focus-visible{
   outline:2px solid var(--c-vert);outline-offset:2px;}
