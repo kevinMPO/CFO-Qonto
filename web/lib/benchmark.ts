@@ -9,14 +9,24 @@
 // vitrine et utilise la recherche web hébergée d'Anthropic.
 //
 // Deux règles respectées :
-//   • Zéro PII (règle 3) : on n'envoie QUE le nom du marchand + sa catégorie.
+//   • Zéro PII (règle 3) : on n'envoie QUE le nom du marchand + sa catégorie,
+//     et ce nom est d'abord NETTOYÉ par `sanitizeMerchantQuery` — le `merchant`
+//     d'une transaction Qonto retombe sur le `label` brut, qui contient
+//     couramment « VIR SEPA M. DUPONT REF … ». Chaque charge utile sortante
+//     passe ensuite par `assertNoPii`, juste avant le `fetch`.
 //   • Chaque prix = source + date (règle 4) : sans source datée → « non vérifié ».
+//
+// Le montant mensuel constaté N'EST PLUS transmis : c'est une donnée du compte
+// du client, attachée à un marchand nommé, et la passe 1 pilote une recherche
+// web dont le modèle choisit les requêtes. Elle reste un paramètre (la route
+// s'en sert pour soustraire), mais elle ne franchit plus la frontière réseau.
 //
 // Le calcul de l'économie N'EST PAS fait ici : la route/engine soustrait les
 // prix. Le LLM ne fournit que de la donnée sourcée.
 // ---------------------------------------------------------------------------
 
 import Anthropic from "@anthropic-ai/sdk";
+import { assertNoPii, redactForLogs, sanitizeMerchantQuery } from "@/lib/privacy/egress";
 import type { Lang } from "./types";
 
 const MODEL = process.env.ARGENTIER_MODEL || "claude-sonnet-5";
@@ -63,7 +73,9 @@ function yearFrom(text: string): string {
 
 /**
  * Recherche via l'API Linkup (le même fournisseur que le MCP Linkup du skill).
- * On n'envoie que le nom du marchand + la catégorie (règle 3, zéro PII).
+ * `merchant` et `category` sont DÉJÀ nettoyés par l'appelant : c'est la seule
+ * charge utile autorisée (règle 3, zéro PII), et `assertNoPii` le re-vérifie
+ * juste avant le `fetch`.
  */
 async function searchLinkup(
   merchant: string,
@@ -75,15 +87,23 @@ async function searchLinkup(
       ? `Quelles sont les 3 meilleures alternatives MOINS CHÈRES à "${merchant}" (catégorie : ${category}) en 2026 ? Pour chaque CONCURRENT (jamais ${merchant} lui-même), donne son nom, son prix mensuel public actuel (par utilisateur si applicable) et l'URL de sa page tarifs.`
       : `What are the 3 best CHEAPER alternatives to "${merchant}" (category: ${category}) in 2026? For each COMPETITOR (never ${merchant} itself), give its name, its current public monthly price (per user if applicable) and its pricing-page URL.`;
 
+  // sourcedAnswer = réponse synthétisée (liste de concurrents + prix) + sources.
+  // Bien plus exploitable par l'extraction que des snippets bruts (searchResults).
+  const corps = { q, depth: "standard", outputType: "sourcedAnswer" };
+
+  // Dernière barrière avant le réseau. Ici l'échec est FRANC (pas de
+  // caviardage) : la charge utile ne vient que de `sanitizeMerchantQuery`, donc
+  // une détection signifie que le nettoyage a été contourné — il faut que ça
+  // casse bruyamment, pas que ça parte quand même.
+  assertNoPii(corps, "recherche Linkup");
+
   const res = await fetch("https://api.linkup.so/v1/search", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.LINKUP_API_KEY}`,
       "Content-Type": "application/json",
     },
-    // sourcedAnswer = réponse synthétisée (liste de concurrents + prix) + sources.
-    // Bien plus exploitable par l'extraction que des snippets bruts (searchResults).
-    body: JSON.stringify({ q, depth: "standard", outputType: "sourcedAnswer" }),
+    body: JSON.stringify(corps),
   });
   if (!res.ok) throw new Error(`Linkup ${res.status}`);
 
@@ -178,7 +198,14 @@ const EXTRACT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-const NOTE: Record<"noKey" | "webDown" | "noSource", Record<Lang, string>> = {
+const NOTE: Record<"noKey" | "webDown" | "noSource" | "noMerchant", Record<Lang, string>> = {
+  noMerchant: {
+    fr: "Non vérifié — libellé inexploitable après filtrage anti-PII : aucune recherche lancée.",
+    en: "Not verified — label unusable after PII filtering: no search was run.",
+    de: "Nicht verifiziert — Bezeichnung nach PII-Filterung unbrauchbar: keine Suche gestartet.",
+    es: "No verificado — etiqueta inutilizable tras el filtrado anti-PII: no se lanzó ninguna búsqueda.",
+    it: "Non verificato — etichetta inutilizzabile dopo il filtro anti-PII: nessuna ricerca avviata.",
+  },
   noKey: {
     fr: "Non vérifié — clé Anthropic absente (benchmark désactivé).",
     en: "Not verified — Anthropic key missing (benchmark disabled).",
@@ -216,6 +243,10 @@ function sameBrand(altName: string, merchant: string): boolean {
   return alt.includes(brand) || brand.includes(alt);
 }
 
+/**
+ * @param currentMonthly dépense mensuelle observée. Sert UNIQUEMENT à l'appelant
+ *   (soustraction du meilleur prix trouvé) : elle n'est transmise à aucun tiers.
+ */
 export async function benchmark(
   merchant: string,
   category: string,
@@ -234,6 +265,21 @@ export async function benchmark(
     return { ...base, note: NOTE.noKey[lang] };
   }
 
+  // Charge utile sortante = nom du marchand + catégorie, NETTOYÉS. S'il ne
+  // reste rien d'exploitable (le libellé n'était qu'un identifiant), on
+  // n'interroge personne : mieux vaut « non vérifié » qu'une fuite.
+  let marchandSortant: string;
+  let categorieSortante: string;
+  try {
+    ({ merchant: marchandSortant, category: categorieSortante } = sanitizeMerchantQuery(
+      merchant,
+      category,
+    ));
+  } catch (err) {
+    console.error("Benchmark : libellé rejeté par le filtre anti-PII :", err);
+    return { ...base, note: NOTE.noMerchant[lang] };
+  }
+
   const client = new Anthropic();
 
   // --- Passe 1 : recherche des prix ----------------------------------------
@@ -244,26 +290,29 @@ export async function benchmark(
   let sources: BenchSource[];
   try {
     if (provider === "linkup") {
-      ({ summary, sources } = await searchLinkup(merchant, category, lang));
+      ({ summary, sources } = await searchLinkup(marchandSortant, categorieSortante, lang));
     } else {
+      // Marchand + catégorie, sans le montant : ce message pilote une recherche
+      // web dont le modèle choisit lui-même les requêtes. Un montant réel
+      // attaché à un marchand nommé pourrait donc se retrouver dans une
+      // requête exécutée côté serveur (règle 3).
+      const messages = [
+        {
+          role: "user" as const,
+          content:
+            lang === "fr"
+              ? `Outil actuel : "${marchandSortant}" (catégorie : ${categorieSortante}). Trouve des alternatives moins chères à usage équivalent, avec prix public sourcé et daté.`
+              : `Current tool: "${marchandSortant}" (category: ${categorieSortante}). Find cheaper alternatives at equal usage, with a sourced, dated public price.`,
+        },
+      ];
+      assertNoPii(messages, "recherche web Anthropic (passe 1)");
+
       const search = (await client.messages.create({
         model: MODEL,
         max_tokens: 2000,
         tools: [WEB_SEARCH as unknown as Anthropic.Tool],
         system: [{ type: "text", text: SYSTEM[lang] }],
-        messages: [
-          {
-            role: "user",
-            content:
-              lang === "fr"
-                ? `Outil actuel : "${merchant}" (catégorie : ${category}). Coût constaté : environ ${Math.round(
-                    currentMonthly,
-                  )} €/mois. Trouve des alternatives moins chères à usage équivalent, avec prix public sourcé et daté.`
-                : `Current tool: "${merchant}" (category: ${category}). Observed cost: about €${Math.round(
-                    currentMonthly,
-                  )}/month. Find cheaper alternatives at equal usage, with a sourced, dated public price.`,
-          },
-        ],
+        messages,
       } as unknown as Anthropic.MessageCreateParamsNonStreaming)) as Anthropic.Message;
       summary = search.content
         .filter((b): b is Anthropic.TextBlock => b.type === "text")
@@ -288,27 +337,33 @@ export async function benchmark(
       .map((s, i) => `[${i}] ${s.title} — ${s.url} (${s.date || "date n.c."})`)
       .join("\n");
 
+    // Ici, la matière première vient du WEB (résumé + titres + URL de sources),
+    // pas du compte : une page tarifaire peut très bien contenir un e-mail de
+    // contact ou une URL à identifiant. On CAVIARDE donc au lieu d'échouer —
+    // sinon une page mal fichue suffirait à priver l'utilisateur de son
+    // extraction. Les URL réellement affichées viennent de `sources`, jamais du
+    // texte renvoyé par le modèle : rien n'est cassé par le caviardage.
+    const contenu = redactForLogs(
+      `TEXTE :\n${summary}\n\nSOURCES :\n${sourceList}`,
+    ) as string;
+    const messagesExtraction = [{ role: "user" as const, content: contenu }];
+    const systemeExtraction =
+      "Tu extrais des prix depuis un texte de benchmark et une liste de sources numérotées. " +
+      "Pour chaque alternative citée, donne le prix mensuel en euros (null si non chiffré), " +
+      "l'unité, et l'index [n] de la source qui l'atteste. N'invente aucun prix ni source. " +
+      `IMPORTANT : ne retiens QUE des produits CONCURRENTS différents. Exclus totalement « ${marchandSortant} » ` +
+      "et ses propres formules/paliers de prix (Free, Pro, Business, annuel…) — on cherche à le remplacer, pas à le lister.";
+    assertNoPii(
+      { system: systemeExtraction, messages: messagesExtraction },
+      "extraction de prix Anthropic (passe 2)",
+    );
+
     const extract = (await client.messages.create({
       model: MODEL,
       max_tokens: 1500,
       output_config: { effort: "low", format: { type: "json_schema", schema: EXTRACT_SCHEMA } },
-      system: [
-        {
-          type: "text",
-          text:
-            "Tu extrais des prix depuis un texte de benchmark et une liste de sources numérotées. " +
-            "Pour chaque alternative citée, donne le prix mensuel en euros (null si non chiffré), " +
-            "l'unité, et l'index [n] de la source qui l'atteste. N'invente aucun prix ni source. " +
-            `IMPORTANT : ne retiens QUE des produits CONCURRENTS différents. Exclus totalement « ${merchant} » ` +
-            "et ses propres formules/paliers de prix (Free, Pro, Business, annuel…) — on cherche à le remplacer, pas à le lister.",
-        },
-      ],
-      messages: [
-        {
-          role: "user",
-          content: `TEXTE :\n${summary}\n\nSOURCES :\n${sourceList}`,
-        },
-      ],
+      system: [{ type: "text", text: systemeExtraction }],
+      messages: messagesExtraction,
     } as unknown as Anthropic.MessageCreateParamsNonStreaming)) as Anthropic.Message;
 
     const txt = extract.content.find((b) => b.type === "text");

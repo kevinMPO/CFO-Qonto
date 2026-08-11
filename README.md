@@ -244,7 +244,7 @@ Without Qonto/Anthropic keys the app runs on **demo data** (mock).
 ### 4. MCP server on Cloudflare (`my-app/`)
 ```bash
 cd my-app
-npm install --legacy-peer-deps
+npm install
 npx wrangler dev               # local  →  POST http://localhost:8787/mcp
 npx wrangler login && npx wrangler deploy   # publish (needs your Cloudflare OAuth)
 ```
@@ -286,7 +286,7 @@ DAF Qonto/
 
 ## Deploy
 
-- **Web app** → Cloudflare Pages (`@cloudflare/next-on-pages`) or Vercel.
+- **Web app** → Cloudflare Workers via OpenNext (`npx opennextjs-cloudflare build`).
 - **MCP server** → `cd my-app && npx wrangler login && npx wrangler deploy`.
 - **Custom domain** `getargentier.com` → add it in the Cloudflare dashboard (Workers/Pages → Custom domains)
   or `wrangler` route. All keys live in **Cloudflare secrets** (`wrangler secret put`), never in the repo.

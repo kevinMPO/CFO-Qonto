@@ -6,9 +6,18 @@
 // [crochets] à compléter — on n'invente pas les coordonnées de l'utilisateur.
 //
 // Bilingue : Claude rédige dans la langue demandée ; gabarit de secours FR/EN.
+//
+// RÈGLE 3 (zéro PII) : le nom du fournisseur peut venir d'un libellé Qonto brut
+// (« VIR SEPA … »). Il est donc nettoyé avant de partir, tout comme
+// l'alternative et les prix du marché, et la charge utile est re-contrôlée par
+// `assertNoPii` juste avant l'appel. Les montants d'économie, eux, RESTENT :
+// ce sont les chiffres du client, dans un courrier destiné au client, calculés
+// par engine.ts — les retirer viderait le courrier de sa substance. Ils ne
+// partent jamais vers un moteur de recherche, contrairement au benchmark.
 // ---------------------------------------------------------------------------
 
 import Anthropic from "@anthropic-ai/sdk";
+import { assertNoPii, redactForLogs, sanitizeMerchantQuery } from "@/lib/privacy/egress";
 import type { Lang, LeverAction } from "./types";
 
 const MODEL = process.env.ARGENTIER_MODEL || "claude-sonnet-5";
@@ -144,12 +153,15 @@ export async function generateLetter(req: LetterRequest): Promise<string> {
   try {
     const client = new Anthropic();
     const intent = ACTION_INTENT[lang][req.action] ?? ACTION_INTENT[lang].renegotiate;
+    // Nettoyage anti-PII des deux seuls champs de texte libre venus du compte.
+    const marchand = sanitizeMerchantQuery(req.merchant).merchant;
+    const alternative = nettoyerAlternative(req.alternative);
     const sourcesBlock = buildSourcesBlock(req, lang);
     const prompt =
       lang !== "fr"
         ? `Write the letter for this case:
-- Provider / service: ${req.merchant}
-- Goal: ${intent}${req.alternative ? ` (option considered: ${req.alternative})` : ""}
+- Provider / service: ${marchand}
+- Goal: ${intent}${alternative ? ` (option considered: ${alternative})` : ""}
 - Target saving (indicative, not to be framed as a demand): about €${Math.round(
             req.savingMonthly,
           )}/month, i.e. €${Math.round(req.savingAnnual)}/year.${sourcesBlock}
@@ -158,8 +170,8 @@ Adapt the tone: a cancellation is firm but courteous; a renegotiation or
 consolidation opens a dialogue and asks for a proposal. If market prices are
 provided, cite them factually (name + price + date) without aggressiveness.`
         : `Rédige le courrier pour ce cas :
-- Fournisseur / service : ${req.merchant}
-- Objectif : ${intent}${req.alternative ? ` (piste envisagée : ${req.alternative})` : ""}
+- Fournisseur / service : ${marchand}
+- Objectif : ${intent}${alternative ? ` (piste envisagée : ${alternative})` : ""}
 - Économie visée (indicative, à ne pas présenter comme une exigence) : environ ${Math.round(
             req.savingMonthly,
           )} €/mois, soit ${Math.round(req.savingAnnual)} €/an.${sourcesBlock}
@@ -167,6 +179,10 @@ provided, cite them factually (name + price + date) without aggressiveness.`
 Adapte le ton : une résiliation est ferme mais courtoise ; une renégociation ou
 consolidation ouvre le dialogue et demande une proposition. Si des prix du marché
 sont fournis, cite-les factuellement (nom + tarif + date) sans agressivité.`;
+
+    // Dernière barrière avant le réseau. Un rejet ici n'est pas une panne : le
+    // gabarit déterministe prend le relais, l'utilisateur a son courrier.
+    assertNoPii({ prompt }, "rédaction de courrier Anthropic");
 
     const response = (await client.messages.create({
       model: MODEL,
@@ -184,6 +200,19 @@ sont fournis, cite-les factuellement (nom + tarif + date) sans agressivité.`;
   }
 }
 
+/**
+ * Alternative transmissible, ou chaîne vide. Contrairement au marchand, une
+ * alternative vide n'est pas bloquante : le courrier se rédige sans elle.
+ */
+function nettoyerAlternative(alternative: string): string {
+  if (!alternative) return "";
+  try {
+    return sanitizeMerchantQuery(alternative).merchant;
+  } catch {
+    return "";
+  }
+}
+
 function buildSourcesBlock(req: LetterRequest, lang: Lang): string {
   if (!req.sources || req.sources.length === 0) return "";
   const rows = req.sources
@@ -192,6 +221,10 @@ function buildSourcesBlock(req: LetterRequest, lang: Lang): string {
         ? `- ${s.name} : ${s.price}${s.date ? ` (relevé ${s.date})` : ""}`
         : `- ${s.name}: ${s.price}${s.date ? ` (checked ${s.date})` : ""}`,
     )
+    // Les prix du marché viennent du web via le front : on les caviarde plutôt
+    // que de refuser le courrier pour une adresse e-mail traînant dans un
+    // libellé de source.
+    .map((ligne) => redactForLogs(ligne) as string)
     .join("\n");
   return lang === "fr"
     ? `\n\nPrix du marché sourcés (à citer factuellement pour appuyer la demande, avec la date) :\n${rows}`

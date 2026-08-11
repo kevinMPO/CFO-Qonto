@@ -3,5 +3,48 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-07-12",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+
+  // -------------------------------------------------------------------------
+  // KV — jetons OAuth Qonto, CHIFFRÉS (AES-GCM, cf. lib/auth/token-store.ts),
+  // avec un TTL calé sur la durée de vie du refresh token.
+  //
+  // Ce binding est OBLIGATOIRE en production : sans lui, `getTokenStore()` lève
+  // `BindingManquantError` au lieu de retomber en mémoire. Le repli mémoire ne
+  // chiffre rien, n'expire rien, et sa révocation ne porte que sur l'instance
+  // qui répond — ce n'était pas un mode dégradé, c'était la faille.
+  //
+  // Provisionné. Pour le recréer ailleurs :
+  //   npx wrangler kv namespace create ARGENTIER_TOKENS
+  // puis reporter l'id rendu ci-dessous.
+  // -------------------------------------------------------------------------
+  "kv_namespaces": [
+    {
+      "binding": "ARGENTIER_TOKENS",
+      "id": "e1386e7b4a964b2eb4092412851cd1aa"
+    }
+  ],
+
+  // -------------------------------------------------------------------------
+  // D1 — socle multi-locataire : organizations, decisions, audit_log
+  // (cf. db/0001_init.sql et lib/db/tenant.ts).
+  //
+  // Également OBLIGATOIRE en production : sans lui, `baseD1()` lève plutôt que
+  // de rendre `null`. Une lecture bancaire qui ne laisse aucune trace est
+  // précisément ce qu'un DAF nous paie pour empêcher : on refuse la lecture au
+  // lieu de la servir sans journal. La route d'état, elle, se contente
+  // d'observer (`baseD1SiPresente`) et ne tombe jamais en 500.
+  //
+  // Provisionné en WEUR, migration 0001 appliquée en distant. Pour recréer :
+  //   npx wrangler d1 create argentier --location weur
+  //   npx wrangler d1 execute argentier --remote --file=./db/0001_init.sql
+  // puis reporter le database_id rendu ci-dessous.
+  // -------------------------------------------------------------------------
+  "d1_databases": [
+    {
+      "binding": "ARGENTIER_DB",
+      "database_name": "argentier",
+      "database_id": "da9f48b0-5a4a-4c3d-b5b6-4e3ba64d4bc3"
+    }
+  ]
 }

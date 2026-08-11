@@ -3,13 +3,32 @@
 // Proxy serveur : la clé ELEVENLABS_API_KEY ne quitte JAMAIS le back.
 // Le front envoie le texte déjà rédigé dans la langue choisie ; on renvoie
 // l'audio (mp3). Modèle multilingue → FR/EN/DE/ES/IT.
+//
+// RÈGLE 3 (zéro PII) : ce texte est composé côté navigateur à partir de
+// l'analyse, donc à partir de libellés de transactions. Il est CAVIARDÉ avant
+// de partir (un IBAN lu à voix haute reste un IBAN qui a franchi la
+// frontière), puis re-contrôlé par `assertNoPii` juste avant le `fetch`. On
+// caviarde au lieu de refuser : priver l'utilisateur de la narration parce
+// qu'un libellé est sale serait une punition, pas une protection.
+//
+// ACCÈS : ouvert, mais PLAFONNÉ par IP (cf. lib/api/rate-limit.ts). ElevenLabs
+// facture au caractère et la narration en fait ~2500 : c'est la route la plus
+// chère à l'appel, donc la plus serrée. Elle reste sans authentification parce
+// que la voix se déclenche sur /demo pour un visiteur qui n'a pas connecté
+// Qonto (app/Argentier.tsx, `playVoice`).
 // ---------------------------------------------------------------------------
 
+import { reponseTropDeRequetes, verifierDebit } from "@/lib/api/rate-limit";
+import { assertNoPii, redactForLogs } from "@/lib/privacy/egress";
 
 // Voix multilingue par défaut (« Rachel ») — surchargée par ELEVENLABS_VOICE_ID.
 const DEFAULT_VOICE = "21m00Tcm4TlvDq8ikWAM";
 
 export async function POST(req: Request): Promise<Response> {
+  // Avant TOUT travail payant : le contrôle de débit.
+  const debit = await verifierDebit(req, "voice");
+  if (!debit.autorise) return reponseTropDeRequetes(debit);
+
   const key = process.env.ELEVENLABS_API_KEY;
   if (!key) {
     return Response.json({ error: "no_elevenlabs_key" }, { status: 503 });
@@ -28,6 +47,20 @@ export async function POST(req: Request): Promise<Response> {
 
   const voice = process.env.ELEVENLABS_VOICE_ID || DEFAULT_VOICE;
 
+  // Caviardage puis contrôle : ce qui part est la narration, débarrassée de
+  // tout IBAN, e-mail, identifiant de transaction ou numéro de carte.
+  const corps = {
+    text: redactForLogs(text) as string,
+    model_id: "eleven_multilingual_v2",
+    voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+  };
+  try {
+    assertNoPii(corps, "synthèse vocale ElevenLabs");
+  } catch (err) {
+    console.error("Voix : texte rejeté par le filtre anti-PII :", err);
+    return Response.json({ error: "pii_detected" }, { status: 400 });
+  }
+
   try {
     const el = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
       method: "POST",
@@ -36,11 +69,7 @@ export async function POST(req: Request): Promise<Response> {
         "Content-Type": "application/json",
         Accept: "audio/mpeg",
       },
-      body: JSON.stringify({
-        text,
-        model_id: "eleven_multilingual_v2",
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-      }),
+      body: JSON.stringify(corps),
     });
 
     if (!el.ok) {

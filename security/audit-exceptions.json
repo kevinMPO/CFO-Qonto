@@ -1,0 +1,51 @@
+{
+  "_lisez_moi": [
+    "Exceptions à la porte CI `npm audit --omit=dev --audit-level=high`.",
+    "Une exception n'efface pas la vulnérabilité : elle acte une décision, la justifie,",
+    "et l'assortit d'une DATE D'EXPIRATION. Passée cette date, la CI redevient rouge et",
+    "quelqu'un doit re-trancher. C'est ce qui distingue une exception d'un silence.",
+    "Toute vulnérabilité haute ou critique NON listée ici fait échouer la CI."
+  ],
+  "exceptions": [
+    {
+      "paquet": "next",
+      "gravite": "high",
+      "expire_le": "2026-11-11",
+      "correctif_disponible": "next@16.3.0 (changement majeur)",
+      "justification": [
+        "Vulnérabilité racine dont postcss et sharp héritent. Le seul correctif proposé par",
+        "npm est une montée en version MAJEURE de Next (15.5 -> 16.3), qui dépasse largement",
+        "le périmètre d'un correctif de sécurité et exige sa propre campagne de tests.",
+        "Décision : planifier la migration Next 16 comme un chantier à part entière."
+      ]
+    },
+    {
+      "paquet": "sharp",
+      "gravite": "high",
+      "expire_le": "2026-11-11",
+      "correctif_disponible": "via next@16.3.0 (changement majeur)",
+      "justification": [
+        "CVE-2026-33327, -33328, -35590, -35591 (libvips). sharp n'est utilisée par Next que",
+        "pour l'optimisation d'images, joignable via /_next/image.",
+        "Exposition mesurée le 11/08/2026 : `next/image` n'est importé NULLE PART dans app/",
+        "ni lib/, et next.config.mjs ne déclare aucun `remotePatterns`. L'optimiseur ne peut",
+        "donc traiter que des images locales du dépôt, c'est-à-dire du contenu de confiance.",
+        "Un attaquant ne dispose d'aucun chemin pour soumettre une image piégée à libvips.",
+        "À réévaluer immédiatement si next/image ou des images distantes sont introduits."
+      ]
+    },
+    {
+      "paquet": "postcss",
+      "gravite": "high",
+      "expire_le": "2026-11-11",
+      "correctif_disponible": "via next@16.3.0 (changement majeur)",
+      "justification": [
+        "XSS via </style> non échappé, et lecture de fichier arbitraire via une entrée",
+        "contrôlée par l'attaquant. postcss ne s'exécute qu'au moment du BUILD, sur les",
+        "feuilles de style du dépôt (app/globals.css). Aucune CSS d'origine utilisateur",
+        "n'est compilée à l'exécution. L'entrée est donc entièrement de confiance.",
+        "À réévaluer si une CSS d'origine externe venait à être traitée."
+      ]
+    }
+  ]
+}

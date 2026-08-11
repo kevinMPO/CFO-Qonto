@@ -6,9 +6,17 @@
 //
 // Sans ANTHROPIC_API_KEY, on retombe sur un classifieur déterministe par
 // mots-clés (categorizeByRules) : l'app reste démontrable hors-ligne.
+//
+// RÈGLE 3 (zéro PII) : le nom du marchand vient de `clean_counterparty_name`
+// SINON du `label` Qonto brut, qui contient couramment le nom d'une personne
+// physique et une référence de paiement. Ce qui sort d'ici est donc nettoyé par
+// `sanitizeMerchantQuery`, puis re-contrôlé par `assertNoPii` avant l'appel. Le
+// montant en euros, lui, ne sort plus du tout : le classifieur produit des
+// étiquettes et un ratio, il n'a jamais eu besoin du montant pour cela.
 // ---------------------------------------------------------------------------
 
 import Anthropic from "@anthropic-ai/sdk";
+import { assertNoPii, sanitizeMerchantQuery } from "@/lib/privacy/egress";
 import type { MerchantVerdict, Nature, Pole, Risk, LeverAction } from "./types";
 
 const MODEL = process.env.ARGENTIER_MODEL || "claude-sonnet-5";
@@ -38,7 +46,8 @@ const ACTIONS: LeverAction[] = [
 export interface MerchantInput {
   name: string;
   occurrences: number;
-  monthlyEstimate: number; // indicatif, aide le LLM à juger — pas recalculé par lui
+  /** Indicatif, calculé par engine.ts. Usage INTERNE : jamais transmis (règle 3). */
+  monthlyEstimate: number;
   isRecurring: boolean;
 }
 
@@ -105,18 +114,51 @@ export function hasAnthropicKey(): boolean {
   return !!process.env.ANTHROPIC_API_KEY;
 }
 
+/** Un marchand et le nom, nettoyé, sous lequel il a le droit de sortir. */
+interface MarchandSortant {
+  entree: MerchantInput;
+  /** `null` : il ne restait rien d'exploitable après nettoyage anti-PII. */
+  nomSortant: string | null;
+}
+
+/**
+ * Nom transmissible à un tiers, ou `null` si le libellé n'était en réalité
+ * qu'un identifiant / une référence de virement.
+ */
+function nettoyerNom(nom: string): string | null {
+  try {
+    return sanitizeMerchantQuery(nom).merchant;
+  } catch {
+    return null;
+  }
+}
+
 /** Classifieur LLM. Renvoie un verdict par marchand fourni. */
 export async function categorizeWithClaude(
   merchants: MerchantInput[],
 ): Promise<MerchantVerdict[]> {
   const client = new Anthropic();
 
-  const userPayload = merchants.map((m) => ({
-    name: m.name,
-    occurrences: m.occurrences,
-    montant_mensuel_indicatif_eur: Math.round(m.monthlyEstimate),
-    recurrent: m.isRecurring,
+  // Charge utile sortante : nom nettoyé, nombre d'occurrences, récurrence.
+  // Pas de montant, pas d'identifiant, pas de date (règle 3).
+  const sortants: MarchandSortant[] = merchants.map((m) => ({
+    entree: m,
+    nomSortant: nettoyerNom(m.name),
   }));
+  const transmis = sortants.filter((s) => s.nomSortant !== null);
+
+  // Plus rien à demander : le classifieur déterministe fait le travail sans
+  // qu'un seul octet ne sorte.
+  if (transmis.length === 0) return categorizeByRules(merchants);
+
+  const userPayload = transmis.map((s) => ({
+    name: s.nomSortant,
+    occurrences: s.entree.occurrences,
+    recurrent: s.entree.isRecurring,
+  }));
+
+  // Dernière barrière avant le réseau.
+  assertNoPii(userPayload, "catégorisation Anthropic");
 
   // Structured outputs (output_config.format) : le champ peut ne pas être typé
   // selon la version du SDK — on cast les params, la réponse reste un Message.
@@ -145,15 +187,34 @@ export async function categorizeWithClaude(
   const text = response.content.find((b) => b.type === "text");
   if (!text || text.type !== "text") throw new Error("Réponse Claude vide");
   const parsed = JSON.parse(text.text) as { verdicts: MerchantVerdict[] };
-  return sanitize(parsed.verdicts, merchants);
+  return recomposer(parsed.verdicts, sortants);
 }
 
-/** Garantit un verdict par marchand attendu (le LLM peut en oublier). */
-function sanitize(verdicts: MerchantVerdict[], expected: MerchantInput[]): MerchantVerdict[] {
-  const byName = new Map(verdicts.map((v) => [v.name.toLowerCase(), v]));
-  return expected.map(
-    (m) => byName.get(m.name.toLowerCase()) ?? ruleVerdict(m),
+/**
+ * Recolle les verdicts sur les marchands d'ORIGINE.
+ *
+ * Deux raisons de ne pas se contenter du nom renvoyé par le modèle :
+ *  1. c'est le nom NETTOYÉ qui est parti ; engine.ts, lui, indexe ses agrégats
+ *     sur le nom d'origine — sans ce recollage, aucun verdict ne serait
+ *     retrouvé et tout retomberait sur les règles ;
+ *  2. le modèle peut oublier un marchand : celui-là garde son verdict
+ *     déterministe.
+ */
+function recomposer(
+  verdicts: MerchantVerdict[],
+  sortants: MarchandSortant[],
+): MerchantVerdict[] {
+  const parNom = new Map(
+    (verdicts ?? [])
+      .filter((v) => typeof v?.name === "string")
+      .map((v) => [v.name.toLowerCase(), v]),
   );
+
+  return sortants.map(({ entree, nomSortant }) => {
+    const verdict = nomSortant ? parNom.get(nomSortant.toLowerCase()) : undefined;
+    // Le nom d'origine est restauré : c'est la clé de jointure d'engine.ts.
+    return verdict ? { ...verdict, name: entree.name } : ruleVerdict(entree);
+  });
 }
 
 // --- Fallback déterministe (pas de clé Anthropic) --------------------------

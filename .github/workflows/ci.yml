@@ -1,0 +1,120 @@
+# ---------------------------------------------------------------------------
+# CI Argentier — trois portes indépendantes, toutes bloquantes :
+#   moteur    : le calcul déterministe reste juste (règle 2)
+#   web       : types, tests unitaires, build de production
+#   securite  : aucun secret ni donnée bancaire commité (règles 1 et 3)
+# ---------------------------------------------------------------------------
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Une seule exécution par branche : les poussées successives annulent la précédente.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  moteur:
+    name: Moteur déterministe (Python)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Tests du moteur
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Rendu sur l'échantillon de démonstration
+        # Garde-fou de non-régression : le moteur doit tourner de bout en bout
+        # sur le jeu d'exemple sans lever d'exception.
+        run: python3 engine.py data/exemple-demo.json > /dev/null
+
+  web:
+    name: Application web (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Installation
+        # Plus de --legacy-peer-deps : le flag n'était imposé que par
+        # @cloudflare/next-on-pages, retiré (prédécesseur abandonné d'OpenNext,
+        # référencé nulle part, et il hissait un esbuild 0.15 qui cassait le
+        # build Cloudflare). Si ce flag redevient nécessaire, c'est le signe
+        # d'un conflit de pairs à régler, pas à contourner.
+        run: npm ci
+
+      - name: Vérification des types
+        run: npx tsc --noEmit
+
+      - name: Tests unitaires
+        run: npm test
+
+      - name: Build de production
+        run: npm run build
+        env:
+          # Le build ne doit dépendre d'aucun secret réel. S'il échoue ici,
+          # c'est qu'une clé est lue au moment du build au lieu de l'exécution.
+          ARGENTIER_BASE_URL: http://localhost:3000
+
+  securite:
+    name: Secrets et données bancaires
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Historique complet : un secret retiré dans le dernier commit reste
+          # une fuite s'il est encore atteignable dans l'historique.
+          fetch-depth: 0
+
+      - name: Garde-fou secrets
+        run: ./scripts/check-secrets.sh
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Installation (nécessaire à npm audit)
+        working-directory: web
+        run: npm ci
+
+      - name: Audit des dépendances de production
+        # Le périmètre est celui qui est réellement déployé : les vulnérabilités
+        # hautes de `undici` et `ws` viennent de miniflare, embarqué par wrangler,
+        # et n'ont AUCUN correctif. Cet outillage ne part jamais en production ;
+        # bloquer dessus rendrait la porte rouge en permanence, donc ignorée,
+        # donc inutile.
+        #
+        # Les exceptions restantes sont justifiées ET DATÉES dans
+        # security/audit-exceptions.json. Passée leur échéance, cette porte
+        # redevient rouge et quelqu'un doit re-trancher.
+        run: python3 scripts/check-audit.py
+
+      - name: Audit des dépendances de développement (informatif)
+        working-directory: web
+        continue-on-error: true
+        run: npm audit --audit-level=high
