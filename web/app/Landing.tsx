@@ -3,7 +3,8 @@
 /**
  * Landing — page principale du site (le pitch, façon page marketing).
  * Palette inspirée de qonto.com : fond quasi-noir, texte blanc, accent jaune.
- * Bouton « Voir la démo » → l'app Argentier (MAMFORMA · Qonto).
+ * Bouton « Voir la démo » → l'app Argentier, sur le jeu de démonstration
+ * anonymisé de `lib/mock.ts` (société fictive, montants fictifs).
  */
 
 import React, { useEffect, useState } from "react";
@@ -281,7 +282,19 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
       )}
 
       <footer className="lp-foot">
-        <Mark /> Argentier · Qonto × Anthropic MCP Hackathon
+        <div className="lp-foot-brand">
+          <Mark /> Argentier
+        </div>
+        <nav className="lp-foot-liens">
+          <a href="/mentions-legales">Mentions légales</a>
+          <a href="/confidentialite">Confidentialité</a>
+          <a href="/cgv">CGV</a>
+          <a href="/dpa">Sous-traitance (DPA)</a>
+          <a href="/sous-traitants">Sous-traitants</a>
+        </nav>
+        <div className="lp-foot-note">
+          Lecture seule — Argentier ne déplace jamais d’argent.
+        </div>
       </footer>
     </div>
   );
@@ -362,8 +375,13 @@ const CSS = `
 .lp-disclaimer{font-size:12px;color:var(--ink2);max-width:560px;margin:22px auto 0;line-height:1.6;}
 .lp-proto{font-family:'Space Grotesk';font-weight:600;font-size:13px;color:var(--yellow);margin:14px 0 0;letter-spacing:.02em;}
 
-.lp-foot{border-top:1px solid var(--line);text-align:center;padding:28px;color:var(--ink2);font-size:13px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.lp-foot{border-top:1px solid var(--line);text-align:center;padding:32px 20px 40px;color:var(--ink2);font-size:13px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+.lp-foot-brand{display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--ink);}
 .lp-foot .lp-mark{width:18px;height:18px;color:var(--ink2);}
+.lp-foot-liens{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;}
+.lp-foot-liens a{color:var(--ink2);text-decoration:none;}
+.lp-foot-liens a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:2px;}
+.lp-foot-note{opacity:.72;max-width:420px;}
 .lp-gate{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);}
 .lp-gate-box{background:#1b1b19;border:1px solid var(--line);border-radius:18px;padding:28px;width:100%;max-width:420px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5);}
 .lp-gate-title{font-family:'Space Grotesk';font-weight:700;font-size:22px;color:var(--ink);margin:0 0 6px;}
