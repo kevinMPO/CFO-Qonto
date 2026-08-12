@@ -6,6 +6,23 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
 
   // -------------------------------------------------------------------------
+  // Variables NON secrètes. Les secrets (clés d'API, clé de chiffrement des
+  // jetons, secret de session) ne sont JAMAIS ici : ce fichier est versionné.
+  // Ils sont posés par `npx wrangler secret put <NOM>`.
+  //
+  // ARGENTIER_BASE_URL construit la redirect_uri OAuth et les retours /demo.
+  // Elle doit correspondre EXACTEMENT à l'URL réellement servie, sinon Qonto
+  // rejette le retour.
+  // -------------------------------------------------------------------------
+  "vars": {
+    "ARGENTIER_BASE_URL": "https://argentier.bonjour-e83.workers.dev",
+    "QONTO_OAUTH_PROVIDER": "mcp-proxy",
+    "QONTO_OAUTH_CLIENT_ID": "qonto-mcp-public",
+    "ARGENTIER_WINDOW_DAYS": "60"
+  },
+
+
+  // -------------------------------------------------------------------------
   // KV — jetons OAuth Qonto, CHIFFRÉS (AES-GCM, cf. lib/auth/token-store.ts),
   // avec un TTL calé sur la durée de vie du refresh token.
   //
