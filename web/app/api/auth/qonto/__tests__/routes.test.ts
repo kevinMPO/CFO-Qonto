@@ -126,7 +126,32 @@ function valeurCookie(reponse: Response, nom: string): string {
   return decodeURIComponent(brut.slice(brut.indexOf("=") + 1).split(";")[0]);
 }
 
+// Le proxy MCP de Qonto n'accepte que des redirect_uri en loopback : le départ
+// du flux ne peut donc aboutir que sur `localhost`. Le schéma reste `https`
+// pour que le drapeau `Secure` des cookies soit exercé — le garde-fou regarde
+// l'hôte, les cookies regardent le schéma, et les deux doivent être vérifiés.
+const BASE_LOOPBACK = "https://localhost:3000";
+
 describe("GET /api/auth/qonto/start", () => {
+  beforeEach(() => {
+    process.env.ARGENTIER_BASE_URL = BASE_LOOPBACK;
+  });
+
+  it("REFUSE de partir depuis une origine que Qonto rejettera", async () => {
+    // Mesuré contre le serveur réel : toute redirect_uri non-loopback reçoit un
+    // `400 invalid redirect_uri`. Partir quand même enverrait l'utilisateur sur
+    // une page d'erreur OAuth brute chez un tiers — illisible, et donnant
+    // l'impression que le produit est cassé.
+    process.env.ARGENTIER_BASE_URL = "https://www.getargentier.com";
+
+    const reponse = await start();
+
+    expect(reponse.status).toBe(503);
+    expect(reponse.headers.get("location")).toBeNull();
+    const corps = (await reponse.json()) as { error?: string };
+    expect(corps.error).toBe("connexion_indisponible");
+  });
+
   it("redirige vers le serveur d'autorisation en PKCE S256", async () => {
     const reponse = await start();
 
@@ -137,7 +162,7 @@ describe("GET /api/auth/qonto/start", () => {
     expect(url.searchParams.get("code_challenge_method")).toBe("S256");
     expect(url.searchParams.get("code_challenge")).toBeTruthy();
     expect(url.searchParams.get("redirect_uri")).toBe(
-      `${BASE}/api/auth/qonto/callback`,
+      `${BASE_LOOPBACK}/api/auth/qonto/callback`,
     );
   });
 
