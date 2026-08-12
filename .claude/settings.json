@@ -16,7 +16,9 @@
       "Bash(npm:*)",
       "Write(src/**)",
       "Write(data/**)",
-      "Write(drafts/**)"
+      "Write(drafts/**)",
+      "Bash(npx wrangler deploy:*)",
+      "Bash(npx wrangler secret put:*)"
     ],
     "deny": [
       "mcp__qonto__create_card",

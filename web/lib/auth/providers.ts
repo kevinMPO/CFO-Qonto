@@ -85,20 +85,33 @@ const SCOPES_LECTURE_SEULE: string[] = [
 /**
  * Proxy MCP de Qonto — le fournisseur utilisé AUJOURD'HUI.
  *
- * ⚠️ AVERTISSEMENT DE SÉCURITÉ, à lire avant toute modification :
- * ce provider accorde des scopes d'ÉCRITURE qu'on ne peut PAS refuser.
- * Vérifié à la main : `GET /authorize` IGNORE le paramètre `scope` envoyé et
- * redirige (302) vers `oauth.qonto.com/oauth2/auth` avec une liste de scopes
- * FIXE contenant notamment `request_transfers.write`, `card.write`,
- * `client.write`. L'enregistrement dynamique (`POST /register`) renvoie
- * toujours le même client_id public partagé, `qonto-mcp-public` : il n'y a donc
- * aucun moyen d'obtenir ici un jeton restreint à la lecture.
+ * DEUX FAITS MESURÉS le 11 août 2026, contre le serveur réel. Le premier
+ * corrige une erreur d'analyse antérieure, ne pas la réintroduire :
  *
- * CONSÉQUENCE : `readOnly` vaut `false` et la garantie de lecture seule
- * d'Argentier ne vient PAS du jeton. Elle repose ENTIÈREMENT sur l'allowlist
- * applicative, qui est à ce titre une frontière de sécurité de premier ordre —
- * pas un garde-fou cosmétique. Ne jamais relâcher cette allowlist en pensant
- * que le token protège quoi que ce soit : il ne protège rien.
+ * 1. `GET /authorize` HONORE le paramètre `scope`. Envoyé avec
+ *    `scope=organization.read bank_account.read transaction.read`, il redirige
+ *    vers `oauth.qonto.com` avec EXACTEMENT ces trois scopes, zéro écriture.
+ *    Ce n'est QUE lorsqu'aucun `scope` n'est transmis qu'il substitue son
+ *    catalogue par défaut — 32 scopes dont 16 en écriture, `request_transfers.write`
+ *    compris. Autrement dit : le silence vaut consentement à tout.
+ *    → Toujours envoyer SCOPES_LECTURE_SEULE explicitement. Un jour où ce
+ *      paramètre disparaîtrait de la requête, Argentier demanderait
+ *      silencieusement des droits de virement.
+ *
+ * 2. `GET /authorize` REFUSE (400 « invalid redirect_uri ») toute URI qui
+ *    n'est ni du loopback (`http://localhost:*`, `http://127.0.0.1:*`), ni
+ *    inscrite dans sa liste blanche codée en dur (p. ex.
+ *    `https://claude.ai/api/mcp/auth_callback`). Testé et refusé :
+ *    `https://www.getargentier.com/...` et l'URL workers.dev.
+ *    → Ce provider fonctionne en DÉVELOPPEMENT LOCAL uniquement. Une
+ *      application web hébergée ne peut pas s'y connecter, quoi qu'elle
+ *      demande. C'est le blocage réel, et l'objet de la demande adressée à
+ *      Qonto (client OAuth dédié sur oauth.qonto.com).
+ *
+ * `readOnly` vaut `true` : les scopes demandés ne contiennent aucune écriture.
+ * Cela ne dispense JAMAIS de l'allowlist applicative — la défense en
+ * profondeur suppose que l'une des deux barrières puisse céder, et c'est le
+ * périmètre du jeton qui dépend d'un tiers, pas notre allowlist.
  */
 export const QONTO_MCP_PROXY: OAuthProvider = {
   id: "mcp-proxy",
@@ -108,9 +121,9 @@ export const QONTO_MCP_PROXY: OAuthProvider = {
   registrationEndpoint: "https://mcp.qonto.com/register",
   // Client public partagé renvoyé par le DCR — pas de client_secret, PKCE S256.
   clientId: "qonto-mcp-public",
-  // Envoyés par correction, mais le serveur les ignore (cf. avertissement).
+  // Obligatoires : sans eux, Qonto accorde 16 scopes d'écriture (cf. ci-dessus).
   scopes: SCOPES_LECTURE_SEULE,
-  readOnly: false,
+  readOnly: true,
   resource: "https://mcp.qonto.com/mcp",
   get redirectUri(): string {
     // Getter : l'environnement d'un Worker n'est lisible qu'à l'exécution.

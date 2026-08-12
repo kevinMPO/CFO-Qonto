@@ -402,10 +402,13 @@ describe("providers", () => {
   });
 
   it("dit la vérité sur la lecture seule de chaque provider", () => {
-    // Le proxy MCP accorde des scopes d'écriture qu'on ne peut pas refuser :
-    // si ce booléen passait à `true` un jour, l'allowlist applicative pourrait
-    // être relâchée à tort. Ce test est là pour l'interdire.
-    expect(QONTO_MCP_PROXY.readOnly).toBe(false);
+    // Mesuré le 11/08/2026 : le proxy MCP HONORE le `scope` transmis, donc le
+    // jeton obtenu est bien restreint à la lecture. Attention au piège : c'est
+    // vrai UNIQUEMENT parce qu'on envoie des scopes explicites. Sans paramètre
+    // `scope`, Qonto en substitue 32 dont 16 en écriture. Le test
+    // « ne demande jamais un scope d'écriture » ci-dessous garde cet invariant :
+    // il vérifie que la liste est non vide, ce qui n'est pas cosmétique.
+    expect(QONTO_MCP_PROXY.readOnly).toBe(true);
     expect(QONTO_DIRECT_READONLY.readOnly).toBe(true);
     expect(QONTO_DIRECT_READONLY.notYetAvailable).toBe(true);
   });

@@ -416,8 +416,9 @@ describe("GET /api/auth/qonto/status", () => {
     await expect(reponse.json()).resolves.toEqual({
       connected: false,
       readOnly: true,
-      // Le proxy MCP impose des scopes d'écriture : on ne le cache pas.
-      scopesAreWriteCapable: true,
+      // Les scopes demandés sont tous en `.read` et Qonto les honore : le
+      // jeton lui-même est incapable d'écrire.
+      scopesAreWriteCapable: false,
     });
     expect(reponse.headers.get("cache-control")).toBe("no-store");
   });

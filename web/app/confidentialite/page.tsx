@@ -137,15 +137,19 @@ export default function Confidentialite() {
       </p>
       <div className="dl-note">
         <p>
-          <strong>Transparence sur une limite du dispositif.</strong> Le serveur
-          MCP de Qonto ne permet pas aujourd’hui de demander un jeton restreint
-          à la lecture : la liste des autorisations est imposée et comporte des
-          droits d’écriture que nous ne pouvons pas refuser. Argentier{" "}
-          <strong>n’en utilise aucun</strong> : un contrôle interne n’autorise
-          que des requêtes de lecture sur une liste fermée d’adresses, et rejette
-          tout le reste. Un test automatisé fait échouer la mise en production si
-          quiconque tente d’ajouter un appel qui contournerait ce contrôle. Nous
-          demandons à Qonto un jeton réellement restreint à la lecture.
+          <strong>Le jeton demandé ne permet que de lire.</strong> Argentier
+          sollicite explicitement des autorisations en lecture seule —
+          consultation de l’organisation, des comptes, des opérations, des
+          justificatifs — et aucune autorisation d’écriture. Vous pouvez le
+          constater sur l’écran de consentement de Qonto avant d’accepter :
+          aucune ligne n’y mentionne de virement, de carte ni de modification.
+        </p>
+        <p>
+          Une seconde barrière s’ajoute à la première, parce qu’une garantie
+          unique n’en est pas une : un contrôle interne n’autorise que des
+          requêtes de lecture sur une liste fermée d’adresses et rejette tout le
+          reste, et un test automatisé fait échouer la mise en production si
+          quiconque ajoute un appel qui le contournerait.
         </p>
       </div>
 
