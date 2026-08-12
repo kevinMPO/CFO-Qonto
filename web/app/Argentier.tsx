@@ -113,6 +113,9 @@ export default function Argentier() {
   const [levers, setLevers] = useState(MOCK.levers);
   const [horizon, setHorizon] = useState(12);
   const [loaded, setLoaded] = useState(false);
+  // Refus de /api/analyze. `null` = pas de refus. Voir l'effet de chargement :
+  // un 401 ne doit JAMAIS être confondu avec une analyse.
+  const [refusApi, setRefusApi] = useState<null | "reconnexion" | "indisponible">(null);
 
   const T = tr(lang);
   const eur = (n: number) => eurFmt(n, lang);
@@ -189,15 +192,34 @@ export default function Argentier() {
 
   useEffect(() => {
     let alive = true;
+    // `r.ok` est VÉRIFIÉ, et ce n'est pas un détail : sans ce contrôle, un 401
+    // « reconnecte ton compte » était parsé comme une analyse, l'écran retombait
+    // sur MOCK, et l'utilisateur lisait des montants FICTIFS en croyant qu'ils
+    // étaient les siens. Sur un produit qui vend la justesse des chiffres, c'est
+    // le pire défaut possible. Un refus doit se voir.
     fetch("/api/analyze")
-      .then((r) => r.json())
-      .then((d: AnalyzeResult) => {
+      .then(async (r) => {
+        if (r.ok) return { ok: true as const, data: (await r.json()) as AnalyzeResult };
+        return { ok: false as const, statut: r.status };
+      })
+      .then((res) => {
         if (!alive) return;
-        setData(d);
-        setLevers(d.levers);
+        if (res.ok) {
+          setData(res.data);
+          setLevers(res.data.levers);
+          setRefusApi(null);
+        } else {
+          // 401 = session valide mais jeton indisponible. Les données affichées
+          // restent celles de la démonstration : on le DIT, on ne le masque pas.
+          setRefusApi(res.statut === 401 ? "reconnexion" : "indisponible");
+        }
         setLoaded(true);
       })
-      .catch(() => alive && setLoaded(true));
+      .catch(() => {
+        if (!alive) return;
+        setRefusApi("indisponible");
+        setLoaded(true);
+      });
     return () => {
       alive = false;
     };
@@ -401,6 +423,46 @@ export default function Argentier() {
   return (
     <div className="arg-root">
       <style>{CSS}</style>
+
+      {refusApi && (
+        <div className="arg-alerte" role="alert">
+          <strong>
+            {refusApi === "reconnexion"
+              ? L({
+                  fr: "Impossible de lire ton compte Qonto.",
+                  en: "Cannot read your Qonto account.",
+                  de: "Ihr Qonto-Konto kann nicht gelesen werden.",
+                  es: "No se puede leer tu cuenta Qonto.",
+                  it: "Impossibile leggere il tuo conto Qonto.",
+                })
+              : L({
+                  fr: "L'analyse est momentanément indisponible.",
+                  en: "The analysis is temporarily unavailable.",
+                  de: "Die Analyse ist derzeit nicht verfügbar.",
+                  es: "El análisis no está disponible temporalmente.",
+                  it: "L'analisi è momentaneamente non disponibile.",
+                })}
+          </strong>{" "}
+          {L({
+            fr: "Les montants ci-dessous sont ceux de la démonstration, pas les tiens.",
+            en: "The figures below are demonstration data, not yours.",
+            de: "Die Zahlen unten sind Demodaten, nicht Ihre.",
+            es: "Las cifras siguientes son de demostración, no las tuyas.",
+            it: "Gli importi sotto sono di dimostrazione, non i tuoi.",
+          })}
+          {refusApi === "reconnexion" && (
+            <a className="arg-alerte-lien" href="/api/auth/qonto/start">
+              {L({
+                fr: "Reconnecter mon compte",
+                en: "Reconnect my account",
+                de: "Konto neu verbinden",
+                es: "Reconectar mi cuenta",
+                it: "Ricollega il mio conto",
+              })}
+            </a>
+          )}
+        </div>
+      )}
 
       {/* Barre */}
       <header className="arg-top">
@@ -1526,6 +1588,11 @@ const CSS = `
 .arg-root *{box-sizing:border-box;}
 .arg-mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;}
 
+.arg-alerte{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-bottom:18px;padding:13px 16px;
+  border:1px solid #E4A11B;border-left:4px solid #E4A11B;border-radius:10px;background:#FFF8E6;
+  color:#5C4404;font-size:14px;line-height:1.45;}
+.arg-alerte strong{color:#3D2C00;}
+.arg-alerte-lien{margin-left:auto;white-space:nowrap;font-weight:600;color:#5C4404;text-decoration:underline;text-underline-offset:2px;}
 .arg-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
 .arg-brand{display:flex;align-items:center;gap:10px;}
 .arg-mark{width:30px;height:30px;border-radius:8px;background:var(--c-ink);color:var(--c-paper);

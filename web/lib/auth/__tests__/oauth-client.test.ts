@@ -414,12 +414,24 @@ describe("providers", () => {
   });
 
   it("ne demande jamais un scope d'écriture", () => {
+    // `offline_access` est la SEULE exception admise au suffixe `.read` : il ne
+    // donne aucun droit sur les données, il conditionne la délivrance du refresh
+    // token. Toute autre exception serait un élargissement de périmètre.
     for (const provider of [QONTO_MCP_PROXY, QONTO_DIRECT_READONLY]) {
+      // Liste vide = Qonto substitue son catalogue par défaut, 16 scopes
+      // d'écriture compris. Cette assertion n'est pas cosmétique.
       expect(provider.scopes.length).toBeGreaterThan(0);
       for (const scope of provider.scopes) {
-        expect(scope).toMatch(/\.read$/);
+        expect(scope.endsWith(".write"), `scope d'écriture : ${scope}`).toBe(false);
+        if (scope !== "offline_access") expect(scope).toMatch(/\.read$/);
       }
     }
+  });
+
+  it("réclame offline_access, sans quoi aucun refresh token n'est délivré", () => {
+    // Sans refresh token, la session meurt à l'expiration du jeton d'accès et
+    // l'utilisateur doit se reconnecter à la main.
+    expect(QONTO_MCP_PROXY.scopes).toContain("offline_access");
   });
 
   it("choisit le proxy MCP par défaut", () => {

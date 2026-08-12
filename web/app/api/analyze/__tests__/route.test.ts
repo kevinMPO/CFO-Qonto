@@ -144,14 +144,31 @@ describe("GET /api/analyze", () => {
     }
   });
 
-  it("n'utilise pas d'IBAN de configuration sur le chemin OAuth", async () => {
+  it("ignore tout IBAN de configuration, mais transmet celui de l'organisation", async () => {
+    // Deux exigences opposées, et l'ancienne version de ce test ne gardait que
+    // la première — ce qui laissait passer un bug bloquant :
+    //
+    //  a) l'IBAN ne doit JAMAIS venir de la configuration. En multi-locataire,
+    //     ce serait le compte du fondateur lu pour le compte d'un client ;
+    //  b) mais `GET /v2/transactions` REFUSE une requête sans identifiant de
+    //     compte : 422 {"code":"missing","detail":"bank_account_id or iban is
+    //     missing"}. Il faut donc transmettre l'IBAN lu sur l'organisation.
     process.env.QONTO_IBAN = "FR76IBANDUFONDATEUR000000000";
 
     await GET(await requeteAvecSession());
 
     const urls = faux.mock.calls.map(([entree]) => String(entree));
-    expect(urls.some((url) => url.includes("iban"))).toBe(false);
+    const urlTransactions = urls.find((url) => url.includes("/transactions"));
+
+    expect(urlTransactions, "aucun appel à /transactions").toBeTruthy();
+    // (a) l'IBAN de configuration ne fuite nulle part.
     expect(urls.join(" ")).not.toContain("FR76IBANDUFONDATEUR");
+    // (b) l'appel porte bien un identifiant de compte, sinon Qonto renvoie 422.
+    expect(
+      /[?&](iban|bank_account_id)=/.test(urlTransactions ?? ""),
+      "/transactions est appelé sans iban ni bank_account_id : Qonto répondra " +
+        "422 et aucune opération ne sera lue",
+    ).toBe(true);
   });
 
   it("conserve la forme du contrat d'API", async () => {

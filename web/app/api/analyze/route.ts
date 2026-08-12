@@ -239,17 +239,37 @@ async function analyzeAvecSession(
     jetons,
   };
 
-  // Pas d'IBAN : en multi-locataire, un IBAN de configuration n'a aucun sens.
-  // Sans IBAN, le client retient le premier compte de l'organisation.
+  // Séquentiel et non `Promise.all`, pour DEUX raisons distinctes :
   //
-  // Séquentiel et non `Promise.all` : si le jeton doit être rafraîchi, deux
-  // appels concurrents consommeraient deux fois le même refresh token — et les
-  // serveurs qui le font tourner à usage unique en invalideraient un.
+  // 1. Si le jeton doit être rafraîchi, deux appels concurrents consommeraient
+  //    deux fois le même refresh token — et un serveur qui le fait tourner à
+  //    usage unique en invaliderait un.
+  // 2. L'IBAN du compte à lire ne peut venir que de l'organisation. Il FAUT
+  //    donc l'avoir lue avant de demander les opérations.
+  //
+  // Sur ce second point : `GET /v2/transactions` REFUSE une requête sans
+  // identifiant de compte. Observé en conditions réelles —
+  //   422 {"code":"missing","detail":"bank_account_id or iban is missing"}
+  // Le commentaire précédent affirmait qu'« à défaut d'IBAN, le client retient
+  // le premier compte de l'organisation » : c'était faux, et c'est ce qui
+  // rendait toute lecture impossible sur le chemin OAuth. Aucun IBAN ne vient
+  // de la configuration — ça n'aurait aucun sens en multi-locataire — il vient
+  // du compte de l'organisation qu'on vient de lire.
   const org = await lireQonto(ctx, "qonto.get_organization", "/organization", (auth) =>
     getOrganizationOAuth(auth),
   );
+
+  if (!org.iban) {
+    // Mieux vaut un refus explicite qu'une requête dont on sait qu'elle échouera.
+    console.error(
+      "[argentier][analyze] L'organisation n'expose aucun compte bancaire " +
+        "lisible : impossible de demander les opérations.",
+    );
+    return null;
+  }
+
   const txs = await lireQonto(ctx, "qonto.list_transactions", "/transactions", (auth) =>
-    listTransactionsOAuth(auth, windowDays),
+    listTransactionsOAuth({ ...auth, iban: org.iban }, windowDays),
   );
 
   return runPipeline(

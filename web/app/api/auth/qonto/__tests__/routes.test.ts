@@ -146,7 +146,10 @@ describe("GET /api/auth/qonto/start", () => {
     const scopes = (url.searchParams.get("scope") ?? "").split(" ").filter(Boolean);
 
     expect(scopes.length).toBeGreaterThan(0);
-    for (const scope of scopes) expect(scope.endsWith(".read")).toBe(true);
+    for (const scope of scopes) {
+      expect(scope.endsWith(".write"), `scope d'écriture : ${scope}`).toBe(false);
+      if (scope !== "offline_access") expect(scope.endsWith(".read")).toBe(true);
+    }
   });
 
   it("dépose verifier et state en httpOnly, hors de portée des scripts", async () => {

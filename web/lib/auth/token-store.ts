@@ -169,11 +169,29 @@ export class MemoryTokenStore implements TokenStore {
 }
 
 /**
- * Instance mémoire partagée du process : sans elle, chaque requête en dev
- * repartirait d'un stockage vide et l'utilisateur devrait se reconnecter sans
- * arrêt.
+ * Instance mémoire partagée du PROCESS, portée par `globalThis`.
+ *
+ * Pourquoi pas un simple `let` de module : en `next dev`, chaque route est
+ * compilée et chargée comme un module distinct. Une variable de module donne
+ * alors une Map par route — le callback OAuth rangeait le jeton dans la sienne
+ * et `/api/analyze` en créait une autre, vide, ce qui rendait tout test local
+ * de bout en bout impossible (session valide + jeton introuvable → 401).
+ * `globalThis` survit à ces réinstanciations.
+ *
+ * Sans effet en production : le binding KV y est présent, donc ce repli n'est
+ * jamais atteint (`getTokenStore` lève avant).
  */
-let memoirePartagee: MemoryTokenStore | null = null;
+const CLE_MEMOIRE = Symbol.for("argentier.tokenStore.memoire");
+
+type PorteurMemoire = { [CLE_MEMOIRE]?: MemoryTokenStore | null };
+
+function memoireGlobale(): MemoryTokenStore | null {
+  return (globalThis as PorteurMemoire)[CLE_MEMOIRE] ?? null;
+}
+
+function poserMemoireGlobale(store: MemoryTokenStore | null): void {
+  (globalThis as PorteurMemoire)[CLE_MEMOIRE] = store;
+}
 
 /**
  * Fabrique du stockage des jetons.
@@ -207,15 +225,17 @@ export function getTokenStore(env?: TokenStoreEnv): TokenStore {
     );
   }
 
-  if (!memoirePartagee) {
-    memoirePartagee = new MemoryTokenStore();
+  let memoire = memoireGlobale();
+  if (!memoire) {
+    memoire = new MemoryTokenStore();
+    poserMemoireGlobale(memoire);
     console.warn(
       "[argentier] Binding KV ARGENTIER_TOKENS absent : les tokens OAuth sont " +
         "gardés en MÉMOIRE, en clair, et perdus au redémarrage. Acceptable en " +
         "dev local uniquement — configure le binding avant tout déploiement.",
     );
   }
-  return memoirePartagee;
+  return memoire;
 }
 
 /**
@@ -224,5 +244,5 @@ export function getTokenStore(env?: TokenStoreEnv): TokenStore {
  * l'ordre d'exécution des cas.
  */
 export function __resetTokenStoreForTests(): void {
-  memoirePartagee = null;
+  poserMemoireGlobale(null);
 }

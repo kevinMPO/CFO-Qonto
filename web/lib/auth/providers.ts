@@ -74,12 +74,36 @@ export function redirectUriArgentier(): string {
  * Aucun `.write`, jamais — même si le serveur choisit de les ignorer.
  * (Liste à confirmer avec Qonto le jour du client dédié.)
  */
+// Scopes demandés à Qonto. CHAQUE NOM DOIT EXISTER dans le catalogue du client
+// `qonto-mcp-public`, sinon Qonto refuse toute la connexion avec
+// `error=invalid_scope` et l'utilisateur revient sur `/demo?qonto=erreur`.
+//
+// Le catalogue n'est documenté nulle part. On le lit en interrogeant
+// `GET /authorize` SANS paramètre `scope` : Qonto répond alors avec la liste
+// qu'il accorde par défaut, qui est exactement ce que ce client a le droit de
+// demander. Relevé le 11/08/2026 — 15 scopes en lecture + `offline_access` :
+//
+//   attachment.read        card.read              cash_flow_category.read
+//   client.read            client_invoices.read   einvoicing.read
+//   insurance_contract.read membership.read       organization.read
+//   payment_link.read      product.read           sepa_direct_debit.read
+//   subscription.read      supplier_invoice.read  team.read
+//
+// PIÈGE : ni `transaction.read` ni `bank_account.read` n'existent — ce sont des
+// noms plausibles mais faux, et les demander casse toute la connexion. La
+// lecture des opérations et des soldes relève d'`organization.read`.
+//
+// `offline_access` est indispensable : sans lui Qonto ne délivre AUCUN refresh
+// token, et la session meurt à l'expiration du jeton d'accès sans possibilité
+// de la renouveler.
+//
+// Principe de minimisation (règle 3) : on ne demande que ce que le code appelle
+// réellement — l'organisation et ses opérations, les justificatifs. Rien de
+// plus, même si le catalogue le permettrait.
 const SCOPES_LECTURE_SEULE: string[] = [
   "organization.read",
-  "bank_account.read",
-  "transaction.read",
   "attachment.read",
-  "membership.read",
+  "offline_access",
 ];
 
 /**
