@@ -116,6 +116,10 @@ export default function Argentier() {
   // Refus de /api/analyze. `null` = pas de refus. Voir l'effet de chargement :
   // un 401 ne doit JAMAIS être confondu avec une analyse.
   const [refusApi, setRefusApi] = useState<null | "reconnexion" | "indisponible">(null);
+  // Compte Qonto branché ou non. Sert à n'afficher « Déconnecter » qu'à qui a
+  // quelque chose à déconnecter.
+  const [connecte, setConnecte] = useState(false);
+  const [deconnexionEnCours, setDeconnexionEnCours] = useState(false);
 
   const T = tr(lang);
   const eur = (n: number) => eurFmt(n, lang);
@@ -189,6 +193,35 @@ export default function Argentier() {
     const id = setTimeout(() => setApStep((s) => s + 1), apStep === 0 ? 1000 : 1200);
     return () => clearTimeout(id);
   }, [apOpen, apStep]);
+
+  useEffect(() => {
+    // Le départ OAuth renvoie ici avec un code de situation. Sans cette
+    // lecture, un refus côté serveur arrivait sur une page muette.
+    const situation = new URLSearchParams(window.location.search).get("qonto");
+    if (situation === "indisponible" || situation === "erreur") setRefusApi("indisponible");
+
+    let vivant = true;
+    fetch("/api/auth/qonto/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((etat: { connected?: boolean } | null) => {
+        if (vivant && etat) setConnecte(Boolean(etat.connected));
+      })
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, []);
+
+  const deconnecter = async () => {
+    setDeconnexionEnCours(true);
+    try {
+      await fetch("/api/auth/qonto/revoke", { method: "POST" });
+    } finally {
+      // Rechargement plutôt que remise à zéro locale : la déconnexion change la
+      // source des données côté serveur, tout l'écran doit être reconstruit.
+      window.location.href = "/demo";
+    }
+  };
 
   useEffect(() => {
     let alive = true;
@@ -478,6 +511,34 @@ export default function Argentier() {
           </span>
         </div>
         <div className="arg-top-right">
+          {connecte ? (
+            <button
+              className="arg-deco"
+              onClick={deconnecter}
+              disabled={deconnexionEnCours}
+              title={L({
+                fr: "Supprime les jetons d'accès et met fin à la session",
+                en: "Deletes access tokens and ends the session",
+                de: "Löscht Zugriffstoken und beendet die Sitzung",
+                es: "Elimina los tokens de acceso y cierra la sesión",
+                it: "Elimina i token di accesso e chiude la sessione",
+              })}
+            >
+              {deconnexionEnCours
+                ? L({ fr: "Déconnexion…", en: "Signing out…", de: "Abmelden…", es: "Cerrando…", it: "Disconnessione…" })
+                : L({ fr: "Déconnecter", en: "Sign out", de: "Abmelden", es: "Desconectar", it: "Disconnetti" })}
+            </button>
+          ) : (
+            <a className="arg-deco" href="/api/auth/qonto/start">
+              {L({
+                fr: "Connecter Qonto",
+                en: "Connect Qonto",
+                de: "Qonto verbinden",
+                es: "Conectar Qonto",
+                it: "Collega Qonto",
+              })}
+            </a>
+          )}
           <button className="arg-ap-open" onClick={startAutopilot}>
             ⚡ {L({ fr: "Autopilote", en: "Autopilot", de: "Autopilot", es: "Autopiloto", it: "Autopilota" })}
           </button>
@@ -1593,6 +1654,11 @@ const CSS = `
   color:#5C4404;font-size:14px;line-height:1.45;}
 .arg-alerte strong{color:#3D2C00;}
 .arg-alerte-lien{margin-left:auto;white-space:nowrap;font-weight:600;color:#5C4404;text-decoration:underline;text-underline-offset:2px;}
+.arg-deco{display:inline-flex;align-items:center;border:1px solid rgba(0,0,0,.16);background:none;color:inherit;
+  border-radius:99px;font-family:inherit;font-size:13px;font-weight:600;padding:7px 14px;cursor:pointer;
+  text-decoration:none;transition:background .12s;}
+.arg-deco:hover:not(:disabled){background:rgba(0,0,0,.06);}
+.arg-deco:disabled{opacity:.55;cursor:progress;}
 .arg-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap;}
 .arg-brand{display:flex;align-items:center;gap:10px;}
 .arg-mark{width:30px;height:30px;border-radius:8px;background:var(--c-ink);color:var(--c-paper);

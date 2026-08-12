@@ -144,7 +144,7 @@ describe("GET /api/auth/qonto/start", () => {
     // l'impression que le produit est cassé.
     process.env.ARGENTIER_BASE_URL = "https://www.getargentier.com";
 
-    const reponse = await start();
+    const reponse = await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`));
 
     expect(reponse.status).toBe(503);
     expect(reponse.headers.get("location")).toBeNull();
@@ -153,7 +153,7 @@ describe("GET /api/auth/qonto/start", () => {
   });
 
   it("redirige vers le serveur d'autorisation en PKCE S256", async () => {
-    const reponse = await start();
+    const reponse = await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`));
 
     expect(reponse.status).toBe(302);
     const url = new URL(reponse.headers.get("location") ?? "");
@@ -167,7 +167,7 @@ describe("GET /api/auth/qonto/start", () => {
   });
 
   it("ne demande que des scopes en lecture", async () => {
-    const url = new URL((await start()).headers.get("location") ?? "");
+    const url = new URL((await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`))).headers.get("location") ?? "");
     const scopes = (url.searchParams.get("scope") ?? "").split(" ").filter(Boolean);
 
     expect(scopes.length).toBeGreaterThan(0);
@@ -178,7 +178,7 @@ describe("GET /api/auth/qonto/start", () => {
   });
 
   it("dépose verifier et state en httpOnly, hors de portée des scripts", async () => {
-    const cookies = cookiesPoses(await start());
+    const cookies = cookiesPoses(await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`)));
 
     for (const nom of [NOM_COOKIE_VERIFIER, NOM_COOKIE_STATE]) {
       const cookie = cookies.get(nom);
@@ -192,7 +192,7 @@ describe("GET /api/auth/qonto/start", () => {
   });
 
   it("pose le même state que celui envoyé au serveur d'autorisation", async () => {
-    const reponse = await start();
+    const reponse = await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`));
     const url = new URL(reponse.headers.get("location") ?? "");
     const cookie = cookiesPoses(reponse).get(NOM_COOKIE_STATE) ?? "";
     const valeur = decodeURIComponent(cookie.slice(cookie.indexOf("=") + 1).split(";")[0]);
@@ -201,8 +201,8 @@ describe("GET /api/auth/qonto/start", () => {
   });
 
   it("tire un state et un verifier différents à chaque appel", async () => {
-    const premier = cookiesPoses(await start());
-    const second = cookiesPoses(await start());
+    const premier = cookiesPoses(await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`)));
+    const second = cookiesPoses(await start(new Request(`${BASE_LOOPBACK}/api/auth/qonto/start`)));
 
     expect(premier.get(NOM_COOKIE_STATE)).not.toBe(second.get(NOM_COOKIE_STATE));
     expect(premier.get(NOM_COOKIE_VERIFIER)).not.toBe(second.get(NOM_COOKIE_VERIFIER));

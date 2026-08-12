@@ -48,7 +48,7 @@ function origineAcceptableParQonto(redirectUri: string): boolean {
   return hote === "localhost" || hote === "127.0.0.1" || hote === "[::1]";
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(requete: Request): Promise<Response> {
   let urlAutorisation: string;
   let codeVerifier: string;
   let state: string;
@@ -66,6 +66,17 @@ export async function GET(): Promise<Response> {
           `pas la redirect_uri « ${provider.redirectUri} » (loopback ou liste ` +
           `blanche uniquement).`,
       );
+      // Un NAVIGATEUR ne doit pas se retrouver devant du JSON brut : on le
+      // renvoie sur /demo, où le bandeau explique la situation en français.
+      // Les clients d'API, eux, gardent la réponse structurée.
+      if ((requete.headers.get("accept") ?? "").includes("text/html")) {
+        const retour = new URL("/demo", provider.redirectUri);
+        retour.searchParams.set("qonto", "indisponible");
+        const redirection = NextResponse.redirect(retour.toString(), 302);
+        redirection.headers.set("Cache-Control", "no-store");
+        return redirection;
+      }
+
       return NextResponse.json(
         {
           error: "connexion_indisponible",

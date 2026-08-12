@@ -119,6 +119,15 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
           <button className="lp-demo" onClick={() => setGate(true)}>
             {L(lang, { fr: "Voir la démo", en: "See the demo", de: "Demo ansehen", es: "Ver la demo", it: "Vedi la demo" })}
           </button>
+          <a className="lp-cta-login" href="/api/auth/qonto/start">
+            {L(lang, {
+              fr: "Connecter mon compte Qonto",
+              en: "Connect my Qonto account",
+              de: "Mein Qonto-Konto verbinden",
+              es: "Conectar mi cuenta Qonto",
+              it: "Collega il mio conto Qonto",
+            })}
+          </a>
           <a className="lp-cta-ghost" href="#waitlist">
             {L(lang, {
               fr: "Rejoindre la liste d'attente",
@@ -340,6 +349,9 @@ const CSS = `
 .lp-demo{border:0;background:var(--yellow);color:#111110;border-radius:99px;font-family:inherit;font-size:16px;font-weight:700;
   padding:15px 32px;cursor:pointer;box-shadow:0 8px 30px color-mix(in srgb,var(--yellow) 30%,transparent);transition:transform .08s ease;}
 .lp-demo:hover{transform:translateY(-2px);}
+.lp-cta-login{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--yellow);color:var(--yellow);
+  border-radius:99px;font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;}
+.lp-cta-login:hover{background:color-mix(in srgb,var(--yellow) 14%,transparent);}
 .lp-cta-ghost{display:inline-flex;align-items:center;border:1px solid var(--line);color:var(--ink);border-radius:99px;
   font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;}
 .lp-cta-ghost:hover{background:rgba(255,255,255,.08);}
