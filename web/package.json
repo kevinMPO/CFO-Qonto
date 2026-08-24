@@ -14,9 +14,15 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",
+    "@mastra/core": "^1.61.0",
+    "@mastra/libsql": "^1.21.1",
+    "@mastra/mcp": "^1.17.1",
+    "@mastra/memory": "^1.27.0",
+    "@mastra/observability": "^1.17.1",
     "next": "^15.5.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@opennextjs/cloudflare": "^1.20.1",
@@ -24,6 +30,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "esbuild": "^0.25.4",
+    "mastra": "^1.26.0",
     "typescript": "^5.6.0",
     "vitest": "~3.2.0",
     "wrangler": "^4.110.0"

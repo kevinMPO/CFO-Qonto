@@ -125,6 +125,29 @@ statement, by an agent never allowed to touch the money.
 
 ---
 
+## Company Risk Agent (SIREN → risk /20)
+
+A second agent, built on the **Mastra agent harness**: give it a **SIREN**, it identifies the French
+company, pulls what financials are public (RNE), reads **BODACC** for collective procedures, searches
+the live web via the **Linkup MCP**, cross-checks every hit against the company's identity
+(anti-homonym), and returns a **risk score /20** — same split brain: a **deterministic engine scores,
+the LLM only researches and explains**, and every external signal carries a source.
+
+- **Two scores, never hidden behind one** — `financialScore /20` (6 ratio dimensions) and
+  `externalSignalsScore /20` (sourced web + legal signals), combined 80/20 (configurable), and only
+  when the data supports it. Missing financials stay `null`, never `0`.
+- **CRITICAL_EVENT** — a confirmed collective procedure (BODACC, official source) surfaces immediately
+  and is never averaged away.
+- **The harness, actually used** — persistent memory + a **thread per SIREN** (analysis history),
+  observability with PII-scrubbed traces, read-only tools; scheduling primitives are in place for the
+  future supplier-risk monitoring (§ Qonto transactions → suppliers → SIREN → risk map).
+- **Surface** — a card UI at **`/risk`** + **`POST /api/risk`**. Code in [`web/lib/risk/`](web/lib/risk/)
+  (`engine.ts` scores, `mastra.ts` orchestrates, `bodacc.ts`/`identity.ts` read French registries).
+
+*Mastra orchestrates · Linkup MCP searches · the engine scores · Claude explains.*
+
+---
+
 ## Architecture
 
 ### System overview

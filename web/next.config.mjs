@@ -114,6 +114,18 @@ const nextConfig = {
   // Ne pas annoncer la version du framework servi.
   poweredByHeader: false,
 
+  // Mastra + LibSQL embarquent des modules natifs Node : on les garde EXTERNES
+  // (non bundlés) pour que `next build` et les routes serveur fonctionnent.
+  serverExternalPackages: [
+    "@mastra/core",
+    "@mastra/mcp",
+    "@mastra/memory",
+    "@mastra/libsql",
+    "@mastra/observability",
+    "@libsql/client",
+    "libsql",
+  ],
+
   async headers() {
     return [{ source: "/:chemin*", headers: EN_TETES_SECURITE }];
   },

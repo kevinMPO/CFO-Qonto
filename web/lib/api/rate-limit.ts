@@ -79,6 +79,12 @@ export const PLAFONDS: Readonly<Record<string, readonly Fenetre[]>> = Object.fre
     { max: 8, secondes: 60 },
     { max: 60, secondes: 3600 },
   ]),
+  // CompanyRiskAgent : plusieurs recherches Linkup + 2 appels Anthropic par
+  // analyse d'entreprise — la plus lourde, donc serrée.
+  risk: Object.freeze([
+    { max: 3, secondes: 60 },
+    { max: 20, secondes: 3600 },
+  ]),
 });
 
 /**

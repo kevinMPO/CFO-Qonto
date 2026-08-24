@@ -255,8 +255,8 @@ describe("reponseTropDeRequetes", () => {
 });
 
 describe("plafonds déclarés", () => {
-  it("couvre exactement les trois routes payantes", () => {
-    expect(Object.keys(PLAFONDS).sort()).toEqual(["benchmark", "letter", "voice"]);
+  it("couvre exactement les routes payantes", () => {
+    expect(Object.keys(PLAFONDS).sort()).toEqual(["benchmark", "letter", "risk", "voice"]);
   });
 
   it("garde des plafonds finis et strictement positifs", () => {

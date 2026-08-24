@@ -39,3 +39,7 @@ __pycache__/
 .DS_Store
 **/.DS_Store
 *.log
+
+# Base locale CompanyRisk (Mastra memory + historique)
+web/.data/
+.data/
