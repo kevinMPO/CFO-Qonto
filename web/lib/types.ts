@@ -45,6 +45,16 @@ export type LeverAction =
   | "consolidate"
   | "renegotiate";
 
+/**
+ * Motif d'un levier — la taxonomie ORTHOGONALE à la nature. Un levier n'existe
+ * que pour un flux `pilotable` dont le motif est `abonnement`, `doublon` ou
+ * `fx`. `variable` (dépense pilotable non récurrente) ne produit jamais de
+ * levier : on n'annualise pas un one-off. Peut être fourni par l'appelant (API
+ * moteur) ou dérivé par le moteur, mais reste toujours une CATÉGORIE — jamais
+ * un montant.
+ */
+export type Motif = "abonnement" | "doublon" | "fx" | "variable";
+
 export interface NatureSlice {
   key: Nature;
   label: string;
@@ -77,8 +87,10 @@ export interface Lever {
   label: string;
   /** Alternative / action lisible (« 1 seul workspace », « Claude seul »…). */
   to: string;
-  /** Économie mensuelle en € — calculée par engine.ts, jamais par le LLM. */
+  /** Économie mensuelle en € — calculée par le moteur, jamais par le LLM. */
   saving: number;
+  /** Motif du levier (abonnement / doublon / fx) — sert au tri et aux libellés. */
+  motif?: Motif;
   risk: Risk;
   active: boolean;
   /** Type d'action, pour contextualiser la lettre (résiliation vs renégo…). */
@@ -148,6 +160,8 @@ export interface Tx {
   date: string;            // YYYY-MM-DD (settled_at || emitted_at)
   attachmentRequired: boolean;
   hasAttachment: boolean;
+  /** Frais de change associé (€), optionnel — alimente le levier `fx` agrégé. */
+  fee?: number;
 }
 
 // --- Sortie du classifieur LLM (par marchand) -------------------------------
@@ -159,7 +173,12 @@ export interface MerchantVerdict {
   action: LeverAction;
   /** Texte de l'alternative (vide si action = keep). */
   alternative: string;
-  /** Part de l'économie sur le montant mensuel [0..1] — le moteur multiplie. */
-  savingRatio: number;
+  /**
+   * Motif du levier, OPTIONNEL. Le LLM ne l'émet pas : le moteur le dérive
+   * (récurrence, action, frais de change). L'API moteur peut le fournir pour
+   * forcer la catégorie. Jamais un montant — c'est la table `RATIO_ECONOMIE` du
+   * moteur qui traduit l'action en euros (règle #2 : le LLM ne calcule pas).
+   */
+  motif?: Motif;
   risk: Risk;
 }

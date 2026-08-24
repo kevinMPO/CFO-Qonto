@@ -55,8 +55,9 @@ const SYSTEM = `Tu es le moteur de catégorisation d'Argentier, un agent d'optim
 financière pour TPE et entreprises individuelles françaises clientes de Qonto.
 
 Pour chaque marchand fourni, tu renvoies une classification. Tu ne calcules AUCUN
-montant en euros : un moteur déterministe s'en charge. Tu fournis seulement des
-étiquettes et, pour les outils pilotables optimisables, un ratio d'économie.
+montant en euros ET AUCUN ratio : un moteur déterministe s'en charge. Tu fournis
+UNIQUEMENT des étiquettes (catégories). C'est le moteur qui, à partir de l'action
+que tu choisis, applique sa propre table d'économie et calcule l'euro.
 
 Les 4 natures de flux :
 - "pilotable" : abonnements SaaS, outils, télécom, frais bancaires. C'est là qu'on optimise.
@@ -65,13 +66,14 @@ Les 4 natures de flux :
 - "ponctuel" : voyages, gros achats isolés, échéances fiscales. Exclu du run-rate récurrent.
 - "perso" : dépenses personnelles (courses, resto perso, streaming perso) sur un compte EI.
 
-Pour un marchand pilotable, propose une "action" seulement si une optimisation crédible existe :
-- "consolidate" : doublon fonctionnel (2 outils qui font la même chose) → savingRatio ~0.5.
-- "downgrade" : plan surdimensionné → savingRatio ~0.3.
-- "switch" : alternative moins chère à usage égal → savingRatio selon l'écart (0.2 à 0.6).
-- "cancel" : outil dormant ou superflu → savingRatio 1.0.
-- "renegotiate" : contrat renégociable (télécom, banque) → savingRatio ~0.2.
-- "keep" : rien à optimiser, alternative = "", savingRatio = 0.
+Pour un marchand pilotable, choisis une "action" seulement si une optimisation crédible existe.
+L'action est une ÉTIQUETTE — tu ne dis pas combien on économise, le moteur le déduit :
+- "consolidate" : doublon fonctionnel (2 outils qui font la même chose).
+- "downgrade" : plan surdimensionné.
+- "switch" : alternative moins chère à usage égal.
+- "cancel" : outil dormant ou superflu.
+- "renegotiate" : contrat renégociable (télécom, banque).
+- "keep" : rien à optimiser, alternative = "".
 Le risque : "safe" (sans perte de capacité), "med" (à valider), "hard" (projet, changement lourd).
 Ne propose jamais de couper un outil manifestement critique (banque, assurance obligatoire).`;
 
@@ -89,7 +91,6 @@ const SCHEMA = {
           isSubscription: { type: "boolean" },
           action: { type: "string", enum: ACTIONS },
           alternative: { type: "string" },
-          savingRatio: { type: "number" },
           risk: { type: "string", enum: ["safe", "med", "hard"] },
         },
         required: [
@@ -99,7 +100,6 @@ const SCHEMA = {
           "isSubscription",
           "action",
           "alternative",
-          "savingRatio",
           "risk",
         ],
         additionalProperties: false,
@@ -257,12 +257,10 @@ function ruleVerdict(m: MerchantInput): MerchantVerdict {
   const { nature, pole } = classifyRule(m.name);
   let action: LeverAction = "keep";
   let alternative = "";
-  let savingRatio = 0;
   let risk: Risk = "safe";
   if (nature === "pilotable" && m.isRecurring) {
     action = "renegotiate";
     alternative = "revoir le plan / le tarif";
-    savingRatio = 0.2;
     risk = "med";
   }
   return {
@@ -272,7 +270,6 @@ function ruleVerdict(m: MerchantInput): MerchantVerdict {
     isSubscription: m.isRecurring && nature === "pilotable",
     action,
     alternative,
-    savingRatio,
     risk,
   };
 }

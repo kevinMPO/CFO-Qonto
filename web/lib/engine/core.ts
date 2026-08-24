@@ -1,8 +1,16 @@
 // ---------------------------------------------------------------------------
-// engine.ts — le moteur de calcul DÉTERMINISTE d'Argentier.
+// engine/core.ts — le moteur de calcul DÉTERMINISTE d'Argentier.
 //
-// RÈGLE D'OR : tout montant en euros est calculé ICI. Le LLM ne fait que
-// classer (nature, pôle, action, ratio) ; il ne multiplie jamais.
+// RÈGLE D'OR (règle #2 du projet) : tout montant en euros est calculé ICI, par
+// du code. Le LLM ne fait que CLASSER (nature, pôle, action, motif) ; il ne
+// multiplie jamais, il n'émet jamais un nombre qui deviendrait un euro.
+//
+// C'est ce fichier qui a réparé la violation historique : `savingRatio` était un
+// NOMBRE À VIRGULE émis par le LLM (« 0.37 »), puis multiplié par le montant —
+// donc un euro décidé par le modèle. Désormais le LLM ne rend qu'une CATÉGORIE
+// (`action` / `motif`) et c'est la table `RATIO_ECONOMIE`, constante et testée,
+// détenue par le moteur, qui la traduit en euros. Même patron que le moteur de
+// risque (le LLM étiquette, la table `POINTS` score).
 //
 // Produit un AnalyzeResult complet à partir des transactions normalisées et
 // des verdicts de catégorisation.
@@ -13,15 +21,24 @@ import type {
   FluxItem,
   Hausse,
   Lever,
+  LeverAction,
   Localized,
   MerchantVerdict,
+  Motif,
   Nature,
   NatureSlice,
   PoleSlice,
   TvaPerdue,
   Tx,
-} from "./types";
-import { classifyEI, type MerchantInput } from "./categorize";
+} from "@/lib/types";
+import { classifyEI, type MerchantInput } from "@/lib/categorize";
+
+/**
+ * Version du contrat de calcul. Exposée par l'API moteur (/api/v1/engine) et
+ * jointe à chaque réponse : un client peut détecter qu'une règle a changé.
+ * À incrémenter dès qu'une règle métier modifie un chiffre produit.
+ */
+export const ENGINE_VERSION = "1.0.0";
 
 const DAY = 86_400_000;
 const NATURE_LABEL: Record<Nature, string> = {
@@ -31,14 +48,27 @@ const NATURE_LABEL: Record<Nature, string> = {
   perso: "Perso",
 };
 
+// ---------------------------------------------------------------------------
+// RATIO_ECONOMIE — la table déterministe qui remplace le `savingRatio` du LLM.
+//
+// Le LLM choisit une ACTION (une étiquette) ; le MOTEUR détient la part
+// d'économie correspondante. Changer une de ces valeurs est une modification de
+// CODE (revue + test), jamais une sortie de modèle. C'est ce qui rend l'euro
+// reproductible : deux analyses des mêmes transactions donnent le même montant.
+// ---------------------------------------------------------------------------
+const RATIO_ECONOMIE: Record<LeverAction, number> = {
+  cancel: 1.0, // outil dormant / superflu → 100 % récupérable
+  consolidate: 0.5, // doublon fonctionnel → on garde un des deux
+  switch: 0.4, // alternative moins chère à usage égal
+  downgrade: 0.3, // plan surdimensionné → on descend d'un cran
+  renegotiate: 0.2, // contrat renégociable (télécom, banque)
+  keep: 0, // rien à optimiser
+};
+
 const eurL = (n: number): Localized => ({
   fr: Math.round(n).toLocaleString("fr-FR") + " €",
   en: Math.round(n).toLocaleString("en-US") + " €",
 });
-
-// (ancien formateur FR conservé mais inutilisé — remplacé par eurL bilingue)
-const eur = (n: number) =>
-  Math.round(n).toLocaleString("fr-FR").replace(/ /g, " ") + " €";
 
 // --- Utilitaires numériques ------------------------------------------------
 function median(xs: number[]): number {
@@ -120,6 +150,22 @@ function slug(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "").slice(0, 24) || "x";
 }
 
+/**
+ * Motif du levier — la TAXONOMIE orthogonale à la nature. Un levier n'existe QUE
+ * pour un marchand `pilotable` dont le motif est `abonnement`, `doublon` ou `fx`.
+ * `variable` (dépense pilotable non récurrente, one-off) ne produit jamais de
+ * levier : on n'annualise pas un one-off.
+ *
+ * Le motif peut être fourni par l'appelant (API moteur) ; sinon on le DÉRIVE
+ * des faits observés + de l'action classée. La dérivation reste déterministe.
+ */
+function deriveMotif(agg: MerchantAgg, v: MerchantVerdict): Motif {
+  if (v.action === "keep") return "variable";
+  if (v.action === "consolidate") return "doublon";
+  if (v.isSubscription || agg.isRecurring) return "abonnement";
+  return "variable";
+}
+
 export interface BuildInput {
   account: { name: string; bank: string; balance: number };
   windowLabel: Localized;
@@ -172,13 +218,19 @@ export function build(input: BuildInput): AnalyzeResult {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 6);
 
-  // --- leviers : économie €/mois = monthly × savingRatio (moteur) ----------
+  // --- leviers : économie €/mois = monthly × RATIO_ECONOMIE[action] ---------
+  // Le ratio est une CONSTANTE DU MOTEUR (table ci-dessus), pas une sortie du
+  // LLM. Le levier n'existe que si nature==='pilotable' ET motif ∈
+  // {abonnement, doublon} (le motif `fx` est un levier agrégé, traité à part).
   const levers: Lever[] = [];
   const leverNames = new Set<string>();
   for (const a of aggs) {
     const v = verdictOf.get(a.name.toLowerCase());
-    if (!v || v.nature !== "pilotable" || v.action === "keep") continue;
-    const saving = Math.round(a.monthly * clamp01(v.savingRatio));
+    if (!v || v.nature !== "pilotable") continue;
+    const motif = v.motif ?? deriveMotif(a, v);
+    if (motif !== "abonnement" && motif !== "doublon") continue; // GATE
+    const ratio = motif === "doublon" ? RATIO_ECONOMIE.consolidate : RATIO_ECONOMIE[v.action];
+    const saving = Math.round(a.monthly * ratio);
     if (saving <= 0) continue;
     const hausse = detectHausse(a);
     levers.push({
@@ -186,6 +238,7 @@ export function build(input: BuildInput): AnalyzeResult {
       label: a.name,
       to: v.alternative || v.action,
       saving,
+      motif,
       risk: v.risk,
       active: v.risk === "safe",
       action: v.action,
@@ -197,7 +250,8 @@ export function build(input: BuildInput): AnalyzeResult {
 
   // Hausses silencieuses sur des récurrents pilotables non déjà couverts par un
   // levier : on les remonte comme un levier « renégocier / revenir au tarif ».
-  // Le montant récupérable = delta mensuel (dernière − 1re occurrence).
+  // Le montant récupérable = delta mensuel (dernière − 1re occurrence). C'est un
+  // écart OBSERVÉ, 100 % déterministe — le levier le plus solide.
   for (const a of aggs) {
     const key = a.name.toLowerCase();
     if (leverNames.has(key)) continue;
@@ -210,6 +264,7 @@ export function build(input: BuildInput): AnalyzeResult {
       label: a.name,
       to: v.alternative || "revenir au tarif précédent",
       saving: Math.max(0, Math.round(hausse.apresEur - hausse.avantEur)),
+      motif: "abonnement",
       risk: "safe",
       active: true,
       action: "renegotiate",
@@ -218,6 +273,28 @@ export function build(input: BuildInput): AnalyzeResult {
     });
     leverNames.add(key);
   }
+
+  // Frais de change : levier AGRÉGÉ (règle métier — un seul levier). Les frais
+  // Qonto de change sont des transactions `qonto_fee`. 100 % pilotables (on peut
+  // les éviter), 100 % déterministes (somme des frais observés, normalisée /mois).
+  const fxFees = debits
+    .filter((t) => t.operationType === "qonto_fee" || (t.isFx && (t.fee ?? 0) > 0))
+    .reduce((s, t) => s + (t.operationType === "qonto_fee" ? t.amount : t.fee ?? 0), 0);
+  const fxMonthly = Math.round(fxFees / months);
+  if (fxMonthly > 0) {
+    levers.push({
+      id: "frais-de-change",
+      label: "Frais de change",
+      to: "compte multi-devises / carte sans frais",
+      saving: fxMonthly,
+      motif: "fx",
+      risk: "safe",
+      active: true,
+      action: "switch",
+      monthly: fxMonthly,
+    });
+  }
+
   levers.sort((x, y) => y.saving - x.saving);
 
   // Ids de leviers UNIQUES : slug() tronque à 24 car. et écrase la ponctuation,
@@ -324,10 +401,6 @@ export function build(input: BuildInput): AnalyzeResult {
     ...(tvaPerdue ? { tvaPerdue } : {}),
     meta: { source: input.source, categorized: input.categorized, txCount: txs.length },
   };
-}
-
-function clamp01(x: number): number {
-  return Math.max(0, Math.min(1, x || 0));
 }
 
 /**
