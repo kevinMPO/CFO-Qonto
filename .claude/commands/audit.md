@@ -53,4 +53,6 @@ Pour agir, tu **prepares le livrable** — pas d'action bancaire :
 Pour chaque candidat, ecris la decision dans `data/decisions.json` :
 `{marchand, type_optim, montant_annualise, statut: approuve|refuse, raison, date, preuve_attendue_le}`.
 - Un **refus** alimente `data/profile.json` (`refus_passes`) → ne jamais re-proposer ca.
-- Mets a jour `economies_en_attente_eur_an` (somme des approuves non encore prouves).
+- N'additionne AUCUN total toi-meme : lance `python3 sum_ledger.py`, qui recalcule
+  `economies_en_attente_eur_an` et `economies_prouvees_eur_an` depuis `decisions[]`
+  (regle #2 — le moteur additionne, jamais le LLM).

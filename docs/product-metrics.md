@@ -97,12 +97,12 @@ Crucially, **only levers with an observable statement drop are APS-eligible.** F
 `data/flows-<date>.json`, (b) re-runs `engine.py` to confirm the debit vanished/shrank, then (c)
 shifts the amount from `economies_en_attente_eur_an` into `economies_prouvees_eur_an`.
 
-> **Known integrity gap (backlog).** Today `verify.md` step 4 says *"déplace le montant"* — the
-> **running total is maintained by the LLM**, no script recomputes `Σ montant_optimisable_eur` from
-> `decisions[]`. That is in tension with rule #2 ("the engine computes every euro"). **Backlog item:
-> a `sum_ledger.py` that recomputes both scalars deterministically from `decisions[]`, so the North
-> Star aggregate is engine-computed, not model-summed.** Until then, per-lever euros are engine-true;
-> the *sum* is not yet.
+> **Integrity — closed (was backlog).** `sum_ledger.py` recomputes both scalars deterministically
+> from `decisions[]` (sums `montant_annualise` by `statut`); `/verify` and `/audit` now **call it**
+> instead of the LLM moving totals by hand, and `python3 sum_ledger.py --check` exits non-zero if a
+> stored scalar has drifted (a CI-able drift guard). The North Star aggregate is now
+> **engine-computed, not model-summed** — the rule-#2 gap on the *sum* is closed. (Per-decision
+> **net-of-reversal** — re-reading `prouve` decisions at a later `/verify` — remains backlog, §6.)
 
 **Leading vs lagging.** APS is **lagging by construction**: a genuine proof needs ~30 real days of
 post-action observation (`verify.md` — *honnêteté obligatoire*). Its **leading indicator** is the
@@ -211,21 +211,23 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 | **Authorization before execution** | Qonto payment/transfer/card actions by Argentier | **= 0** | `settings.json` `deny` > `allow` hard-denies every write/transfer/card tool **and** the Qonto MCP server cannot move money (its own docs) | **HARD (two layers)** |
 | **Least privilege** | Qonto write tools invoked | **= 0** | Explicit 8-read-tool allowlist; everything else denied | **HARD** |
 | **Reversibility** | Irreversible banking side-effects | **= 0** | Output is a file in `drafts/`; read-only ⇒ no banking side-effect | **HARD** (follows from read-only) |
-| **Explainability** | Displayed euro ≠ `engine.py` euro | **= 0** | Rule #2 + 24 `unittest` tests pin engine math | **SOFT + tests** — *backlog: assert card/letter € == engine output; recompute the APS sum with a script (today it is LLM-summed).* |
+| **Explainability** | Displayed euro ≠ `engine.py` euro | **= 0** | Rule #2 + 24 `unittest` tests pin engine math; **APS sum now recomputed by `sum_ledger.py`** (not LLM) | **SOFT + tests** — *sum gap closed; remaining backlog: assert card/letter € == engine output.* |
 | **Traceability** | Approved decision without a ledger entry | **= 0** | `audit.md` step f writes each decision; `verify.md` acts only on those | **SOFT** (`decisions[]` empty today) |
 | **Confidentiality (zero PII to web)** | PII fields sent to Linkup/Bright Data | **= 0** | `audit.md` step c tells the LLM to send merchant+category only | **SOFT** — *`settings.json` grants `linkup`/`brightdata` unrestricted args; backlog: a technical field filter, not just a prompt.* |
-| **Recommendation vs decision** | Deliverables sent automatically by the agent | **= 0** | `drafts/` "PRÊT — À ENVOYER PAR TOI" label; Qonto banking sends sit behind the user's own SCA | **SOFT for non-Qonto** — *Gmail `create_draft`, Instantly, Apollo sequences are connected and **not** denied; backlog: add all send-capable MCP tools to `deny`.* |
+| **Recommendation vs decision** | Deliverables sent automatically by the agent | **= 0** | `drafts/` "PRÊT — À ENVOYER PAR TOI" label; Qonto banking sends sit behind the user's own SCA; **Gmail / Instantly / Apollo now hard-denied in `settings.json`** | **HARD** for connected send MCPs — *the guarantee is only as complete as the deny-list; add any new send-capable MCP to `deny`.* |
 | **Respect critical suppliers** | Résiliation recommended vs an `intouchable` supplier | **= 0** | `audit.md` step d crosses `profile.json → fournisseurs_intouchables` | **SOFT** — *`profile.json` is empty and `engine.py` never reads it; backlog: enforce in the engine, not the prompt.* |
 | **Proof integrity (net-of-reversal)** | Proven euros later reversed and not removed | **= 0** | *claimed* self-correction on the next `/verify` | **BACKLOG** — *`verify.md` re-reads only `approuve` decisions; a `prouve` decision is never re-checked, so reversals do **not** net out today. This must be built for the "×12 is safe" claim to hold.* |
 | **Wrong amount / unsourced price** | Price shown as fact without a dated source | **= 0** | Rule #4: 1 retry → "non vérifié", dropped | **SOFT** (prompt-enforced verification pass) |
 
-**Hardening backlog (the three that most matter).**
-1. **Deny send-capable non-Qonto MCPs** (`Gmail create_draft`, Instantly, Apollo) in `settings.json`
-   so "autonomous sends = 0" is HARD, not convention.
+**Hardening backlog.**
+1. ✅ **Done — deny send-capable non-Qonto MCPs** (Gmail / Instantly / Apollo) in `settings.json`, so
+   "autonomous sends = 0" is HARD for connected send MCPs, not convention.
 2. **Filter PII at the tool boundary** for `linkup`/`brightdata` (whitelist merchant + category args)
    so "zero PII to web" is HARD.
-3. **Implement net-of-reversal + a deterministic ledger-sum script** so the North Star aggregate is
-   engine-computed and self-correcting, closing the two rule-#2 gaps.
+3. ✅ **Done (half) — deterministic ledger-sum** (`sum_ledger.py`, with `--check` drift guard): the
+   North Star aggregate is engine-computed. **Still open: net-of-reversal** (`/verify` re-reading
+   `prouve` decisions) so the metric is self-correcting.
+4. **Assert displayed € == engine output** in cards/letters (close the last rule-#2 display gap).
 
 ---
 
@@ -252,10 +254,11 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 
 **Backlog code (not just schema)**
 
-- `sum_ledger.py` — recompute both scalars deterministically from `decisions[]` (removes LLM summing).
+- ✅ `sum_ledger.py` — recomputes both scalars deterministically from `decisions[]` (removes LLM
+  summing); `--check` guards drift; wired into `/audit` + `/verify`; 6 unit tests.
 - `/verify` re-read of `prouve` decisions — implement net-of-reversal.
 - Wire `profile.json → regles_classification` and `fournisseurs_intouchables` into `engine.py`.
-- Tool-boundary PII filter + deny-list for send-capable MCPs.
+- Tool-boundary PII filter for `linkup`/`brightdata`. (Deny-list for send-capable MCPs — ✅ done.)
 
 ---
 

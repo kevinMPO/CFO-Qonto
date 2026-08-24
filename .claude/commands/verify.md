@@ -18,9 +18,12 @@ Objectif : prouver qu'une optimisation approuvee a REELLEMENT eu lieu.
    - **Renegociation** : le montant a-t-il BAISSE vers le prix cible ?
    - **FX** : les frais `fx_card` ont-ils diminue ?
 4. Mets a jour `data/decisions.json` :
-   - Preuve confirmee → passe la decision en `prouve`, deplace le montant de
-     `economies_en_attente_eur_an` vers `economies_prouvees_eur_an`.
+   - Preuve confirmee → passe la decision en `prouve` (change SEULEMENT le `statut`,
+     n'additionne AUCUN total toi-meme).
    - Sinon → laisse en `approuve` et marque `statut_preuve: "en attente J+30"`.
+5. Lance `python3 sum_ledger.py` : il recalcule `economies_prouvees_eur_an` et
+   `economies_en_attente_eur_an` depuis `decisions[]` (regle #2 — le moteur additionne,
+   jamais le LLM). Verifie ensuite avec `python3 sum_ledger.py --check`.
 
 ## Honnetete obligatoire
 Une VRAIE preuve demande **30 jours reels** d'observation apres l'action.

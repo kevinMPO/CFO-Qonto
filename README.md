@@ -111,7 +111,8 @@ statement, by an agent never allowed to touch the money.
 | Qonto money-movement = 0 | `settings.json` deny + Qonto MCP cannot move money | **HARD** (two layers) |
 | Qonto write tools invoked = 0 | 8-read-tool allowlist | **HARD** |
 | PII to web = 0 | `audit.md` prompt only (`linkup`/`brightdata` args unrestricted) | **SOFT** — backlog: arg filter |
-| Autonomous sends = 0 | `drafts/` label convention; non-Qonto send MCPs **not** denied | **SOFT** — backlog: deny Gmail/Instantly/Apollo |
+| Autonomous sends = 0 | `drafts/` label **+ Gmail/Instantly/Apollo denied** in `settings.json` | **HARD** for connected send MCPs |
+| NSM aggregate = engine-summed | **`sum_ledger.py`** recomputes both scalars from `decisions[]` (`--check` guards drift) | **HARD** (was LLM-summed) |
 | Displayed € = engine € | rule #2 convention + 24 engine tests | **SOFT+tests** — backlog: assert displayed==engine |
 | Net-of-reversal | not implemented (`/verify` re-reads only `approuve`) | **BACKLOG** |
 | Untouchable suppliers respected | `profile.json` prompt-checked (empty; engine doesn't read it) | **SOFT** — backlog: wire into engine |
@@ -263,7 +264,8 @@ Creates a hosted CMA agent + session that runs a task in a sandbox. See [`docs/a
 ```
 DAF Qonto/
 ├─ engine.py                 # deterministic engine (the numbers) — source of truth
-├─ tests/test_engine.py      # 24 rule tests
+├─ sum_ledger.py             # deterministic ledger sum (North Star aggregate, not LLM-summed)
+├─ tests/                    # test_engine.py (24 rules) + test_sum_ledger.py (6)
 ├─ SKILL.md                  # the Argentier skill (MCP-native orchestration)
 ├─ .claude/
 │  ├─ settings.json          # read-only guardrail (deny > allow)

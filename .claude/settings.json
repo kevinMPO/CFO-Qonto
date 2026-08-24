@@ -50,7 +50,11 @@
       "mcp__qonto__request_attachment_upload",
       "mcp__qonto__upload_attachment",
       "mcp__qonto__remove_transaction_attachment",
-      "mcp__qonto__change_supplier_invoice_status"
+      "mcp__qonto__change_supplier_invoice_status",
+      "mcp__claude_ai_Gmail__*",
+      "mcp__gmail__*",
+      "mcp__claude_ai_Instantly__*",
+      "mcp__claude_ai_Apollo_io__*"
     ]
   }
 }
