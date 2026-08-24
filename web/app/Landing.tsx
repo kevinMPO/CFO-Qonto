@@ -25,6 +25,9 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
   const [lang, setLang] = useState<Lang>("fr");
   const [joined, setJoined] = useState(false);
   const [email, setEmail] = useState("");
+  // Demande d'accès Slack (Claude Tag) — même stockage KV, source « slack ».
+  const [slackJoined, setSlackJoined] = useState(false);
+  const [slackEmail, setSlackEmail] = useState("");
   // Gate email au clic « Voir la démo » → stocké dans Cloudflare KV.
   const [gate, setGate] = useState(false);
   const [demoEmail, setDemoEmail] = useState("");
@@ -171,6 +174,90 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
             </div>
           </div>
         ))}
+      </section>
+
+      {/* Argentier dans Slack (Claude Tag) — accès qualifié */}
+      <section className="lp-slack" id="slack">
+        <div className="lp-slack-card">
+          <span className="lp-slack-badge">
+            {L(lang, {
+              fr: "Nouveau · Argentier dans Slack",
+              en: "New · Argentier in Slack",
+              de: "Neu · Argentier in Slack",
+              es: "Nuevo · Argentier en Slack",
+              it: "Novità · Argentier in Slack",
+            })}
+          </span>
+          <h2 className="lp-slack-title">
+            {L(lang, {
+              fr: "Tag @Claude, obtiens ton audit",
+              en: "Tag @Claude, get your audit",
+              de: "Tagge @Claude, erhalte dein Audit",
+              es: "Menciona a @Claude, obtén tu auditoría",
+              it: "Tagga @Claude, ottieni il tuo audit",
+            })}
+          </h2>
+          <p className="lp-slack-sub">
+            {L(lang, {
+              fr: "Depuis ton espace Slack, demande un audit de tes dépenses. Argentier étiquette, le moteur déterministe calcule chaque euro, tu approuves. Toujours en lecture seule.",
+              en: "From your Slack workspace, ask for a spend audit. Argentier labels, the deterministic engine computes every euro, you approve. Always read-only.",
+              de: "Frag aus deinem Slack-Workspace nach einem Ausgaben-Audit. Argentier etikettiert, die deterministische Engine berechnet jeden Euro, du gibst frei. Immer nur lesend.",
+              es: "Desde tu espacio de Slack, pide una auditoría de gastos. Argentier etiqueta, el motor determinista calcula cada euro, tú apruebas. Siempre en solo lectura.",
+              it: "Dal tuo spazio Slack, chiedi un audit delle spese. Argentier etichetta, il motore deterministico calcola ogni euro, tu approvi. Sempre in sola lettura.",
+            })}
+          </p>
+          <p className="lp-slack-note">
+            {L(lang, {
+              fr: "Accès qualifié : on ouvre Slack aux équipes dont l'usage colle (TPE/EI clientes Qonto). Laisse ton email, on revient vers toi.",
+              en: "Qualified access: we open Slack to teams whose use fits (small businesses on Qonto). Leave your email, we'll get back to you.",
+              de: "Qualifizierter Zugang: Wir öffnen Slack für Teams mit passendem Einsatz (Kleinunternehmen bei Qonto). Hinterlasse deine E-Mail, wir melden uns.",
+              es: "Acceso cualificado: abrimos Slack a equipos cuyo uso encaja (pymes en Qonto). Deja tu email y te contactamos.",
+              it: "Accesso qualificato: apriamo Slack ai team il cui uso è coerente (piccole imprese su Qonto). Lascia la tua email, ti ricontattiamo.",
+            })}
+          </p>
+          {slackJoined ? (
+            <p className="lp-slack-done">
+              ✓{" "}
+              {L(lang, {
+                fr: "Demande envoyée — on te recontacte pour l'accès Slack.",
+                en: "Request sent — we'll reach out about Slack access.",
+                de: "Anfrage gesendet — wir melden uns wegen des Slack-Zugangs.",
+                es: "Solicitud enviada — te contactaremos sobre el acceso a Slack.",
+                it: "Richiesta inviata — ti ricontatteremo per l'accesso a Slack.",
+              })}
+            </p>
+          ) : (
+            <form
+              className="lp-slack-form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (slackEmail.includes("@")) {
+                  storeEmail(slackEmail, "slack");
+                  setSlackJoined(true);
+                }
+              }}
+            >
+              <input
+                className="lp-slack-input"
+                type="email"
+                required
+                placeholder={L(lang, { fr: "ton@email.com", en: "you@email.com", de: "du@email.com", es: "tu@email.com", it: "tua@email.com" })}
+                value={slackEmail}
+                onChange={(e) => setSlackEmail(e.target.value)}
+                aria-label="email"
+              />
+              <button className="lp-slack-btn" type="submit">
+                {L(lang, {
+                  fr: "Demander l'accès Slack",
+                  en: "Request Slack access",
+                  de: "Slack-Zugang anfragen",
+                  es: "Solicitar acceso a Slack",
+                  it: "Richiedi l'accesso a Slack",
+                })}
+              </button>
+            </form>
+          )}
+        </div>
       </section>
 
       {/* Waitlist */}
@@ -371,6 +458,25 @@ const CSS = `
 .lp-rule-t{font-family:'Space Grotesk';font-weight:600;font-size:16px;margin:0 0 4px;}
 .lp-rule-d{font-size:13.5px;color:var(--ink2);margin:0;}
 
+.lp-slack{max-width:920px;margin:0 auto;padding:0 clamp(18px,5vw,32px) 20px;}
+.lp-slack-card{border:1px solid var(--line);border-radius:20px;padding:clamp(24px,4vw,40px);
+  background:linear-gradient(180deg,rgba(245,211,18,.06),rgba(255,255,255,.02));text-align:center;}
+.lp-slack-badge{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--yellow);
+  border:1px solid color-mix(in srgb,var(--yellow) 40%,transparent);border-radius:99px;padding:5px 13px;margin-bottom:16px;}
+.lp-slack-title{font-family:'Space Grotesk';font-weight:700;font-size:clamp(22px,3.6vw,34px);letter-spacing:-.02em;margin:0 0 12px;}
+.lp-slack-sub{font-size:clamp(15px,2vw,18px);color:var(--ink2);max-width:600px;margin:0 auto 16px;text-wrap:pretty;}
+.lp-slack-note{font-size:13px;color:var(--ink2);max-width:560px;margin:0 auto 20px;line-height:1.55;
+  border-top:1px solid var(--line);padding-top:16px;}
+.lp-slack-form{display:flex;gap:10px;max-width:540px;margin:0 auto;flex-wrap:wrap;justify-content:center;}
+.lp-slack-input{flex:1;min-width:220px;border:1px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);
+  border-radius:99px;font-family:inherit;font-size:15px;padding:14px 22px;outline:none;transition:border-color .12s;}
+.lp-slack-input::placeholder{color:var(--ink2);}
+.lp-slack-input:focus{border-color:var(--yellow);}
+.lp-slack-btn{border:0;background:var(--yellow);color:#111110;border-radius:99px;font-family:inherit;font-size:15px;
+  font-weight:700;padding:14px 26px;cursor:pointer;transition:transform .08s ease;box-shadow:0 8px 30px color-mix(in srgb,var(--yellow) 24%,transparent);}
+.lp-slack-btn:hover{transform:translateY(-2px);}
+.lp-slack-done{font-family:'Space Grotesk';font-weight:700;font-size:clamp(16px,2.4vw,20px);color:var(--yellow);margin:6px 0 0;}
+
 .lp-wait{max-width:720px;margin:0 auto;padding:20px clamp(18px,5vw,32px) 40px;text-align:center;}
 .lp-wait-title{font-family:'Space Grotesk';font-weight:700;font-size:clamp(24px,4vw,38px);letter-spacing:-.02em;margin:0 0 26px;}
 .lp-wait-btn{border:0;background:var(--yellow);color:#111110;border-radius:99px;font-family:inherit;font-size:clamp(14px,2vw,17px);
@@ -406,5 +512,5 @@ const CSS = `
 .lp-gate-btn:hover:not(:disabled){transform:translateY(-1px);}
 .lp-gate-btn:disabled{opacity:.7;cursor:progress;}
 .lp-gate-cancel{margin-top:12px;border:0;background:none;color:var(--ink2);font-family:inherit;font-size:13px;cursor:pointer;text-decoration:underline;}
-@media(prefers-reduced-motion:reduce){.lp-demo,.lp-wait-btn{transition:none;}}
+@media(prefers-reduced-motion:reduce){.lp-demo,.lp-wait-btn,.lp-slack-btn{transition:none;}}
 `;
