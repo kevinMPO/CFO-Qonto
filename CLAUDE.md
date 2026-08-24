@@ -33,12 +33,45 @@ OBSERVE (Qonto 90 j) → ANALYSE (engine.py) → BENCHMARK (avec ton accord, Lin
   En cas de doute → A-CLARIFIER. C'est la brique la plus utile : voir les listes de mots-cles
   dans `engine.py` (`PRO_KEYWORDS`, `PERSO_KEYWORDS`), extensibles via `data/profile.json`.
 
+## Moteur web (`web/lib/engine`) et taxonomie des leviers
+
+Le miroir TypeScript du moteur (`web/lib/engine/core.ts`) applique la meme regle #2 :
+le LLM ne rend que des ETIQUETTES (categories), le moteur detient les euros.
+
+- **Nature** ∈ pilotable | structurel | ponctuel | perso.
+- **Motif** ∈ abonnement | doublon | fx | variable (orthogonal a la nature).
+- Un **levier** n'existe QUE si `nature = pilotable` ET `motif ∈ {abonnement, doublon, fx}`.
+  Un one-off (`variable`) n'en produit jamais.
+- Economie €/mois = montant mensuel × `RATIO_ECONOMIE[action]`, table CONSTANTE du
+  moteur (cancel 1.0, consolidate 0.5, switch 0.4, downgrade 0.3, renegotiate 0.2). Le
+  LLM choisit l'`action` (une categorie) ; il n'emet jamais le ratio ni l'euro. Avant,
+  `savingRatio` etait un nombre EMIS par le LLM — c'etait la violation de la regle #2,
+  reparee (meme patron que le moteur de risque : le LLM etiquette, la table score).
+- `ENGINE_VERSION` est jointe a chaque reponse de l'API moteur.
+
+## API moteur publique (`/api/v1/engine`) et Claude Tag
+
+Le moteur est appelable en HTTP, 100 % deterministe, aucun appel LLM/reseau/ecriture cote serveur :
+
+- `POST /api/v1/engine/analyze` — audite des transactions (+ `labels` optionnels deja poses).
+- `POST /api/v1/engine/simulate` — projette l'impact de decisions (activer/desactiver des leviers).
+- `GET  /api/v1/engine/health` — sonde ouverte : `{ ok, engineVersion, ts }`.
+
+Auth Bearer (`ENGINE_API_TOKENS`, sinon 503), validation Zod `.strict()`, debit 60/min
+par jeton (best-effort en memoire sur Vercel). `claude-tag/` rend Argentier utilisable
+depuis Slack (@Claude) : la skill ETIQUETTE, `scripts/call_engine.py` fait CALCULER
+l'API moteur, Claude reprend les chiffres verbatim.
+
 ## Fichiers
 
 | Fichier | Role |
 |---|---|
-| `engine.py` | Moteur de calcul deterministe (le cerveau chiffre). |
+| `engine.py` | Moteur de calcul deterministe (le cerveau chiffre, cote CLI). |
 | `tests/test_engine.py` | Tests des regles (recurrence, annualisation, doublons, FX, classification). |
+| `web/lib/engine/core.ts` | Miroir web du moteur : leviers, motif, `RATIO_ECONOMIE`, `ENGINE_VERSION`. |
+| `web/lib/engine/api.ts` | Frontiere HTTP de l'API moteur (Zod strict, auth Bearer, analyze/simulate). |
+| `web/app/api/v1/engine/` | Routes publiques `analyze` / `simulate` / `health`. |
+| `claude-tag/` | Skill Slack (Claude Tag) : `SKILL.md`, `standing-instructions.md`, `ADMIN-SETUP.md`, `scripts/call_engine.py`. |
 | `.claude/settings.json` | Le garde-fou : read-only Qonto (deny > allow). |
 | `.claude/commands/audit.md` | La commande `/audit`. |
 | `.claude/commands/verify.md` | La commande `/verify` (preuve J+30). |
