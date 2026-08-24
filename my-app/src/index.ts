@@ -12,6 +12,7 @@ import { z } from "zod";
 import { build } from "./lib/engine";
 import { categorizeByRules, classifyEI, type MerchantInput } from "./lib/categorize";
 import type { Tx } from "./lib/types";
+import { handleSignup, handleLogin, handleMe, handleLogout, authCors } from "./auth";
 
 const RULES = [
   "1. Read-only Qonto : seuls les tools de lecture. Aucune écriture, aucun mouvement d'argent.",
@@ -206,6 +207,26 @@ export default {
         JSON.stringify({ email, lang, source, at: new Date().toISOString() }),
       );
       return Response.json({ ok: true }, { headers: CORS });
+    }
+
+    // Comptes utilisateurs — inscription / connexion (mots de passe hachés, KV).
+    if (url.pathname.startsWith("/auth/")) {
+      if (request.method === "OPTIONS") return authCors();
+      const ip = request.headers.get("CF-Connecting-IP") || "";
+      if (url.pathname === "/auth/signup" || url.pathname === "/auth/login") {
+        if (request.method !== "POST") {
+          return new Response("Method not allowed", { status: 405, headers: CORS });
+        }
+        // Anti-brute-force : 10 tentatives par IP toutes les 5 minutes.
+        if (!(await rateLimit(env, "auth", ip, 10, 300))) {
+          return Response.json({ ok: false, error: "rate_limited" }, { status: 429, headers: CORS });
+        }
+      }
+      if (url.pathname === "/auth/signup") return handleSignup(request, env);
+      if (url.pathname === "/auth/login") return handleLogin(request, env);
+      if (url.pathname === "/auth/me") return handleMe(request, env);
+      if (url.pathname === "/auth/logout") return handleLogout(request, env);
+      return new Response("Not found", { status: 404, headers: CORS });
     }
 
     if (url.pathname === "/" || url.pathname === "/health") {
