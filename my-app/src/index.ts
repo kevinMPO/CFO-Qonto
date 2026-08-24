@@ -222,10 +222,17 @@ export default {
           return Response.json({ ok: false, error: "rate_limited" }, { status: 429, headers: CORS });
         }
       }
-      if (url.pathname === "/auth/signup") return handleSignup(request, env);
-      if (url.pathname === "/auth/login") return handleLogin(request, env);
-      if (url.pathname === "/auth/me") return handleMe(request, env);
-      if (url.pathname === "/auth/logout") return handleLogout(request, env);
+      try {
+        if (url.pathname === "/auth/signup") return await handleSignup(request, env);
+        if (url.pathname === "/auth/login") return await handleLogin(request, env);
+        if (url.pathname === "/auth/me") return await handleMe(request, env);
+        if (url.pathname === "/auth/logout") return await handleLogout(request, env);
+      } catch (err) {
+        // Un bug d'auth doit rendre du JSON, jamais un 1101 brut. On journalise
+        // le détail côté serveur mais on ne le renvoie PAS (pas de fuite interne).
+        console.error("[auth] exception:", err);
+        return Response.json({ ok: false, error: "server_error" }, { status: 500, headers: CORS });
+      }
       return new Response("Not found", { status: 404, headers: CORS });
     }
 

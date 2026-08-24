@@ -16,7 +16,12 @@ interface Env {
   WAITLIST: KVNamespace;
 }
 
-const ITERATIONS = 210_000;
+// Cloudflare Workers PLAFONNE PBKDF2 à 100 000 itérations (au-delà : « iteration
+// counts above 100000 are not supported »). C'est le maximum de la plateforme —
+// en deçà de l'idéal OWASP (600k), mais compensé par un sel aléatoire par
+// utilisateur et un mot de passe choisi (≥ 8 caractères). Ne pas remonter : le
+// runtime lèverait et l'inscription échouerait.
+const ITERATIONS = 100_000;
 const SESSION_TTL = 60 * 60 * 24 * 30; // 30 jours
 
 const CORS: Record<string, string> = {
