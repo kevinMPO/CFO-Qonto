@@ -9,6 +9,11 @@ par une somme reproductible depuis `data/decisions.json` :
   economies_prouvees_eur_an   = somme des `montant_annualise` des decisions `prouve`
   economies_en_attente_eur_an = somme des `montant_annualise` des decisions `approuve`
                                 (approuve = valide, pas encore prouve a J+30)
+  economies_reversees_eur_an  = somme des `montant_annualise` des decisions `reverte`
+                                (net-de-reversion : une economie prouvee qui est repartie
+                                 -- abonnement re-souscrit, prix remonte -- passe en `reverte`
+                                 et sort AUTOMATIQUEMENT du total prouve. La North Star
+                                 s'auto-corrige : elle ne peut que refleter ce qui tient encore.)
 
 Le mode --check ne reecrit rien : il sort avec un code != 0 si les scalaires
 stockes divergent du recalcul. C'est le garde-fou qui detecte une somme qui
@@ -43,6 +48,10 @@ def _amount(decision: dict) -> float:
         return 0.0
 
 
+# Statuts consideres comme « economie repartie » (net-de-reversion).
+REVERTED_STATUSES = frozenset({"reverte", "reversee", "reverted"})
+
+
 def compute_totals(decisions: list) -> tuple:
     """Renvoie (prouvees, en_attente) en euros/an, arrondis a l'entier."""
     prouvees = 0.0
@@ -55,8 +64,17 @@ def compute_totals(decisions: list) -> tuple:
             prouvees += _amount(decision)
         elif statut == "approuve":
             en_attente += _amount(decision)
-        # refuse / inconnu -> ne compte pas
+        # refuse / reverte / inconnu -> ne compte pas dans prouvees ni en_attente
     return round(prouvees), round(en_attente)
+
+
+def compute_reversed(decisions: list) -> int:
+    """Somme des economies repartis (statut `reverte`), en euros/an."""
+    total = 0.0
+    for decision in decisions:
+        if isinstance(decision, dict) and _norm(decision.get("statut")) in REVERTED_STATUSES:
+            total += _amount(decision)
+    return round(total)
 
 
 def recompute(path: str = DEFAULT_PATH, *, check: bool = False) -> int:
@@ -65,26 +83,35 @@ def recompute(path: str = DEFAULT_PATH, *, check: bool = False) -> int:
 
     decisions = ledger.get("decisions", [])
     prouvees, en_attente = compute_totals(decisions)
+    reversees = compute_reversed(decisions)
     old_p = ledger.get("economies_prouvees_eur_an", 0)
     old_a = ledger.get("economies_en_attente_eur_an", 0)
+    old_r = ledger.get("economies_reversees_eur_an", 0)
 
     if check:
-        if old_p != prouvees or old_a != en_attente:
+        if old_p != prouvees or old_a != en_attente or old_r != reversees:
             print(
                 f"DERIVE ledger : prouvees {old_p} -> {prouvees}, "
-                f"en_attente {old_a} -> {en_attente}",
+                f"en_attente {old_a} -> {en_attente}, reversees {old_r} -> {reversees}",
                 file=sys.stderr,
             )
             return 1
-        print(f"OK : prouvees={prouvees} en_attente={en_attente} (aucune derive)")
+        print(
+            f"OK : prouvees={prouvees} en_attente={en_attente} "
+            f"reversees={reversees} (aucune derive)"
+        )
         return 0
 
     ledger["economies_prouvees_eur_an"] = prouvees
     ledger["economies_en_attente_eur_an"] = en_attente
+    ledger["economies_reversees_eur_an"] = reversees
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(ledger, handle, ensure_ascii=False, indent=2)
         handle.write("\n")
-    print(f"Ledger recalcule : prouvees={prouvees} en_attente={en_attente}")
+    print(
+        f"Ledger recalcule : prouvees={prouvees} en_attente={en_attente} "
+        f"reversees={reversees}"
+    )
     return 0
 
 

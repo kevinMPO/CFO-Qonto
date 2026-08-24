@@ -40,6 +40,22 @@ class TestSumLedger(unittest.TestCase):
         decisions = [{"montant_annuel_eur": 300, "statut": "prouve"}]
         self.assertEqual(sum_ledger.compute_totals(decisions), (300, 0))
 
+    def test_reverte_leaves_proven_and_is_tracked(self):
+        # Une eco prouvee qui repart (reverte) sort du total prouve et est tracee a part.
+        decisions = [
+            {"montant_annualise": 480, "statut": "prouve"},
+            {"montant_annualise": 300, "statut": "reverte"},  # etait prouve, repartie
+            {"montant_annualise": 120, "statut": "approuve"},
+        ]
+        prouvees, en_attente = sum_ledger.compute_totals(decisions)
+        self.assertEqual((prouvees, en_attente), (480, 120))  # 300 exclu des deux
+        self.assertEqual(sum_ledger.compute_reversed(decisions), 300)
+
+    def test_reverte_accents(self):
+        decisions = [{"montant_annualise": 90, "statut": "Reverté"}]
+        self.assertEqual(sum_ledger.compute_reversed(decisions), 90)
+        self.assertEqual(sum_ledger.compute_totals(decisions), (0, 0))
+
     def test_check_detects_drift_then_fixes(self):
         ledger = {
             "decisions": [{"montant_annualise": 300, "statut": "prouve"}],

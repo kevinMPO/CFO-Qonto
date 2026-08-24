@@ -54,8 +54,8 @@ money "recommended": money whose **monthly drop is visible on the statement**.
 - **Proven half:** the **monthly** reduction that `/verify` sees leave the real statement at J+30.
 - **Projected half:** the **×12** (or ×365/90 for FX) that `engine.py` applies. This is a
   deterministic annualization of the proven monthly delta — **it is not itself on any statement.** A
-  tool cancelled in month 1 that silently resumes in month 2 would, until net-of-reversal is built
-  (§6, backlog), keep a full projected year in APS. We name this openly rather than claim "you can't
+  tool cancelled in month 1 that silently resumes in month 2 is now caught by **net-of-reversal**
+  (§6, live): the next `/verify` flips it to `reverte` and it leaves APS. We name this openly rather than claim "you can't
   fake a number on the customer's statement" — the customer's statement shows one cycle; the year is
   Argentier's extrapolation of it.
 
@@ -101,8 +101,9 @@ shifts the amount from `economies_en_attente_eur_an` into `economies_prouvees_eu
 > from `decisions[]` (sums `montant_annualise` by `statut`); `/verify` and `/audit` now **call it**
 > instead of the LLM moving totals by hand, and `python3 sum_ledger.py --check` exits non-zero if a
 > stored scalar has drifted (a CI-able drift guard). The North Star aggregate is now
-> **engine-computed, not model-summed** — the rule-#2 gap on the *sum* is closed. (Per-decision
-> **net-of-reversal** — re-reading `prouve` decisions at a later `/verify` — remains backlog, §6.)
+> **engine-computed, not model-summed** — the rule-#2 gap on the *sum* is closed. **Net-of-reversal
+> is now live too:** `/verify` re-reads every `prouve` decision, and a saving that reverted flips to
+> `reverte` and **leaves** `economies_prouvees_eur_an` automatically — the metric self-corrects.)
 
 **Leading vs lagging.** APS is **lagging by construction**: a genuine proof needs ~30 real days of
 post-action observation (`verify.md` — *honnêteté obligatoire*). Its **leading indicator** is the
@@ -132,7 +133,7 @@ what an earlier stage produced, so this is also the debugging order when APS sta
 | 2 | **Qualified sourced levers per audit (engine yield)** | Per audit, count of `abonnement + doublon + fx` candidates with `montant_optimisable_eur > 0` **and** a passing source+date benchmark (rule #4). Source: `engine.py analyze()` lists. | Real today. **Anti-gaming:** yield must rise via *new detectors / better `clean_counterparty_name`*, **not** by loosening `cadence_of` windows, `min_occ`, or `similar()` tolerance — those thresholds are pinned by the 24 unit tests; changing them to inflate candidate counts should fail a test or a review. |
 | 3 | **Human approval rate** (recommend → approuve) | Approved-and-sent ÷ recommended. Source: `decisions.json` entries with `statut = "approuve"`; refusals append to `profile.json → refus_passes`. | Real once `decisions[]` is populated. Gated by recommendation quality: a sourced+dated card with a *préavis*-calculated draft converts; a "non vérifié" claim does not. |
 | 4 | **J+30 proof rate** (approuve → prouve) | Approved decisions `/verify` confirms at J+30 ÷ decisions past `preuve_attendue_le`. Source: `verify.md` steps 3–4. | **The only step that mints APS.** The truth filter: a renegotiation the supplier never honored, or a résiliation the user forgot to send, never converts. |
-| 5 | **Durability × avg proven € per lever** | (a) Share of proven savings still absent on later `/verify` passes. (b) `economies_prouvees_eur_an ÷ # proven levers`. | (a) is **backlog** — `/verify` does not yet re-read `prouve` decisions (§6). Until built, the ×12 projection is unguarded against reversal. (b) is computable today; the engine sorts candidates by `montant_optimisable_eur` desc, so effort concentrates where a proven euro is largest. |
+| 5 | **Durability × avg proven € per lever** | (a) Share of proven savings still absent on later `/verify` passes. (b) `economies_prouvees_eur_an ÷ # proven levers`. | (a) is **live** — `/verify` now re-reads `prouve` decisions; a reverted saving flips to `reverte` and leaves APS (`economies_reversees_eur_an` tracks the drop). (b) is computable today; the engine sorts candidates by `montant_optimisable_eur` desc, so effort concentrates where a proven euro is largest. |
 
 ---
 
@@ -216,7 +217,7 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 | **Confidentiality (zero PII to web)** | PII fields sent to Linkup/Bright Data | **= 0** | `audit.md` step c tells the LLM to send merchant+category only | **SOFT** — *`settings.json` grants `linkup`/`brightdata` unrestricted args; backlog: a technical field filter, not just a prompt.* |
 | **Recommendation vs decision** | Deliverables sent automatically by the agent | **= 0** | `drafts/` "PRÊT — À ENVOYER PAR TOI" label; Qonto banking sends sit behind the user's own SCA; **Gmail / Instantly / Apollo now hard-denied in `settings.json`** | **HARD** for connected send MCPs — *the guarantee is only as complete as the deny-list; add any new send-capable MCP to `deny`.* |
 | **Respect critical suppliers** | Résiliation recommended vs an `intouchable` supplier | **= 0** | `audit.md` step d crosses `profile.json → fournisseurs_intouchables` | **SOFT** — *`profile.json` is empty and `engine.py` never reads it; backlog: enforce in the engine, not the prompt.* |
-| **Proof integrity (net-of-reversal)** | Proven euros later reversed and not removed | **= 0** | *claimed* self-correction on the next `/verify` | **BACKLOG** — *`verify.md` re-reads only `approuve` decisions; a `prouve` decision is never re-checked, so reversals do **not** net out today. This must be built for the "×12 is safe" claim to hold.* |
+| **Proof integrity (net-of-reversal)** | Proven euros later reversed and not removed | **= 0** | `verify.md` step 1(b)+3bis re-read every `prouve` decision; a reverted one flips to `reverte` and leaves the sum (`sum_ledger.py`, tracked in `economies_reversees_eur_an`) | **HARD** (self-correcting) — *the "×12 is safe" claim now holds: a resumed sub is caught at the next `/verify`.* |
 | **Wrong amount / unsourced price** | Price shown as fact without a dated source | **= 0** | Rule #4: 1 retry → "non vérifié", dropped | **SOFT** (prompt-enforced verification pass) |
 
 **Hardening backlog.**
@@ -224,9 +225,9 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
    "autonomous sends = 0" is HARD for connected send MCPs, not convention.
 2. **Filter PII at the tool boundary** for `linkup`/`brightdata` (whitelist merchant + category args)
    so "zero PII to web" is HARD.
-3. ✅ **Done (half) — deterministic ledger-sum** (`sum_ledger.py`, with `--check` drift guard): the
-   North Star aggregate is engine-computed. **Still open: net-of-reversal** (`/verify` re-reading
-   `prouve` decisions) so the metric is self-correcting.
+3. ✅ **Done — deterministic ledger-sum + net-of-reversal.** `sum_ledger.py` (with `--check` drift
+   guard) makes the North Star aggregate engine-computed; `/verify` re-reads every `prouve` decision
+   and flips a reverted saving to `reverte`, which leaves the sum — the metric self-corrects.
 4. **Assert displayed € == engine output** in cards/letters (close the last rule-#2 display gap).
 
 ---
@@ -254,9 +255,10 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 
 **Backlog code (not just schema)**
 
-- ✅ `sum_ledger.py` — recomputes both scalars deterministically from `decisions[]` (removes LLM
-  summing); `--check` guards drift; wired into `/audit` + `/verify`; 6 unit tests.
-- `/verify` re-read of `prouve` decisions — implement net-of-reversal.
+- ✅ `sum_ledger.py` — recomputes all three scalars deterministically from `decisions[]` (removes LLM
+  summing); `--check` guards drift; wired into `/audit` + `/verify`; 8 unit tests.
+- ✅ `/verify` re-reads `prouve` decisions — net-of-reversal live (`reverte` statut →
+  `economies_reversees_eur_an`).
 - Wire `profile.json → regles_classification` and `fournisseurs_intouchables` into `engine.py`.
 - Tool-boundary PII filter for `linkup`/`brightdata`. (Deny-list for send-capable MCPs — ✅ done.)
 
@@ -280,10 +282,10 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
    engine-surfaced optimisable actually proven**, not just count.
 5. **Lag & churn blindness.** APS reacts on a 30+ day cycle. → Paired with **re-use frequency** and
    **activation rate**.
-6. **Adverse incentive + un-built reversal lock.** A pure savings maximand can push aggressive
-   cancellations. The intended mitigation (net-of-reversal) is **backlog, not live** — so today the
-   real mitigations are the human gate and (once wired) `fournisseurs_intouchables`. Named here so the
-   metric's shadow side stays visible **and** un-implemented.
+6. **Adverse incentive.** A pure savings maximand can push aggressive cancellations. The main
+   mitigation, **net-of-reversal, is now live** (a saving that reverts flips to `reverte` and leaves
+   APS), alongside the human gate and (once wired) `fournisseurs_intouchables`. Named here so the
+   metric's shadow side stays visible.
 7. **Receivables blind spot.** DSO / *impayés* / acceptance are a **different product** → future
    receivables module (§3), never in this APS.
 

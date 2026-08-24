@@ -114,7 +114,7 @@ statement, by an agent never allowed to touch the money.
 | Autonomous sends = 0 | `drafts/` label **+ Gmail/Instantly/Apollo denied** in `settings.json` | **HARD** for connected send MCPs |
 | NSM aggregate = engine-summed | **`sum_ledger.py`** recomputes both scalars from `decisions[]` (`--check` guards drift) | **HARD** (was LLM-summed) |
 | Displayed € = engine € | rule #2 convention + 24 engine tests | **SOFT+tests** — backlog: assert displayed==engine |
-| Net-of-reversal | not implemented (`/verify` re-reads only `approuve`) | **BACKLOG** |
+| Net-of-reversal | `/verify` re-reads `prouve` decisions; a reverted saving flips to `reverte` and leaves the sum | **HARD** (self-correcting) |
 | Untouchable suppliers respected | `profile.json` prompt-checked (empty; engine doesn't read it) | **SOFT** — backlog: wire into engine |
 
 > **Receivables metrics** (DSO / *délai moyen de paiement*, *impayés*, acceptance rate) are **not**
