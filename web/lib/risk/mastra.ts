@@ -17,9 +17,12 @@ import fs from "node:fs";
 import { Agent } from "@mastra/core/agent";
 import { MCPClient } from "@mastra/mcp";
 
-export const RISK_MODEL = process.env.ARGENTIER_MODEL?.startsWith("anthropic/")
-  ? process.env.ARGENTIER_MODEL
-  : "anthropic/claude-opus-4-8";
+// Sonnet par défaut : l'agent ne fait qu'orchestrer/extraire/expliquer (pas de
+// raisonnement lourd) et doit tenir dans la limite de temps serverless — sonnet
+// est bien plus rapide qu'opus pour ce travail. Surchargable via ARGENTIER_RISK_MODEL.
+export const RISK_MODEL = process.env.ARGENTIER_RISK_MODEL?.startsWith("anthropic/")
+  ? process.env.ARGENTIER_RISK_MODEL
+  : "anthropic/claude-sonnet-5";
 
 export function riskDbUrl(): string {
   if (process.env.RISK_DB_URL) return process.env.RISK_DB_URL;
