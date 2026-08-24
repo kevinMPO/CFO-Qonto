@@ -85,6 +85,11 @@ export const PLAFONDS: Readonly<Record<string, readonly Fenetre[]>> = Object.fre
     { max: 3, secondes: 60 },
     { max: 20, secondes: 3600 },
   ]),
+  // API moteur publique (/api/v1/engine) : 100 % déterministe, aucun appel
+  // payant en aval — la limite protège la ressource CPU et borne un client
+  // fautif, pas un budget. Plafond par JETON (voir `cleAppelant`), pas par IP :
+  // un client Claude Tag légitime tape depuis une IP mutualisée.
+  engine: Object.freeze([{ max: 60, secondes: 60 }]),
 });
 
 /**
@@ -198,6 +203,7 @@ export async function verifierDebit(
   seau: string,
   fenetres: readonly Fenetre[] = PLAFONDS[seau] ?? [],
   maintenant: number = Date.now(),
+  cleAppelant?: string,
 ): Promise<Verdict> {
   if (fenetres.length === 0) {
     throw new Error(
@@ -206,7 +212,9 @@ export async function verifierDebit(
     );
   }
 
-  const empreinte = empreinteIp(ipDemandeur(requete));
+  // Par défaut on borne par IP ; une route authentifiée passe plutôt son JETON
+  // (`cleAppelant`), qui est aussitôt haché comme l'IP — jamais écrit en clair.
+  const empreinte = empreinteIp(cleAppelant ?? ipDemandeur(requete));
   const kv = kvDebit();
 
   let verdict: Verdict | null = null;
