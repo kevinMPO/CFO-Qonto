@@ -10,6 +10,7 @@
 import React, { useEffect, useState } from "react";
 import type { Lang } from "@/lib/types";
 import { detectLang, PITCH } from "@/lib/i18n";
+import { signup, login, me, logout, type Account } from "@/lib/account";
 
 // Rend **gras** dans un texte.
 function emph(text: string, key: string): React.ReactNode[] {
@@ -28,10 +29,23 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
   // Demande d'accès Slack (Claude Tag) — même stockage KV, source « slack ».
   const [slackJoined, setSlackJoined] = useState(false);
   const [slackEmail, setSlackEmail] = useState("");
-  // Gate email au clic « Voir la démo » → stocké dans Cloudflare KV.
+  // Gate email au clic « Tester gratuitement » → stocké dans Cloudflare KV.
   const [gate, setGate] = useState(false);
   const [demoEmail, setDemoEmail] = useState("");
   const [sending, setSending] = useState(false);
+  // Compte utilisateur (onboarding AVANT Qonto) — jeton géré par lib/account.
+  const [user, setUser] = useState<Account | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState("");
+  const [fEmail, setFEmail] = useState("");
+  const [fPass, setFPass] = useState("");
+  const [fPass2, setFPass2] = useState("");
+  const [fTel, setFTel] = useState("");
+  const [fNom, setFNom] = useState("");
+  const [fPrenom, setFPrenom] = useState("");
+  const [fCgv, setFCgv] = useState(false);
 
   const WAITLIST_URL = "https://argentier-mcp.bonjour-e83.workers.dev/waitlist";
   const storeEmail = async (address: string, source: string) => {
@@ -54,9 +68,67 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
     onDemo();
   };
 
+  // --- Compte utilisateur --------------------------------------------------
+  const openAuth = (mode: "login" | "signup") => {
+    setAuthMode(mode);
+    setAuthError("");
+    setAuthOpen(true);
+  };
+  // Gate : un compte AVANT de connecter Qonto. Connecté → on lance l'OAuth
+  // Qonto (dont la sécurité reste portée par l'OAuth + SCA de Qonto).
+  const openQonto = () => {
+    if (user) window.location.href = "/api/auth/qonto/start";
+    else openAuth("signup");
+  };
+  const errorText = (code: string): string => {
+    const map: Record<string, Record<Lang, string>> = {
+      email_taken: { fr: "Un compte existe déjà avec cet email.", en: "An account already exists for this email.", de: "Für diese E-Mail existiert bereits ein Konto.", es: "Ya existe una cuenta con este email.", it: "Esiste già un account con questa email." },
+      invalid_credentials: { fr: "Email ou mot de passe incorrect.", en: "Wrong email or password.", de: "E-Mail oder Passwort falsch.", es: "Email o contraseña incorrectos.", it: "Email o password errati." },
+      weak_password: { fr: "Mot de passe trop court (8 caractères min).", en: "Password too short (min 8 characters).", de: "Passwort zu kurz (mind. 8 Zeichen).", es: "Contraseña demasiado corta (mín. 8).", it: "Password troppo corta (min 8)." },
+      cgv_required: { fr: "Tu dois accepter les CGV.", en: "You must accept the terms.", de: "Du musst die AGB akzeptieren.", es: "Debes aceptar las condiciones.", it: "Devi accettare i termini." },
+      network: { fr: "Réseau indisponible, réessaie.", en: "Network unavailable, try again.", de: "Netzwerk nicht verfügbar, erneut versuchen.", es: "Red no disponible, inténtalo de nuevo.", it: "Rete non disponibile, riprova." },
+    };
+    return (map[code] && L(lang, map[code])) || L(lang, { fr: "Une erreur est survenue.", en: "Something went wrong.", de: "Ein Fehler ist aufgetreten.", es: "Ha ocurrido un error.", it: "Si è verificato un errore." });
+  };
+  const submitAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    if (authMode === "signup") {
+      if (fPass.length < 8) return setAuthError(errorText("weak_password"));
+      if (fPass !== fPass2)
+        return setAuthError(L(lang, { fr: "Les mots de passe ne correspondent pas.", en: "Passwords don't match.", de: "Passwörter stimmen nicht überein.", es: "Las contraseñas no coinciden.", it: "Le password non corrispondono." }));
+      if (!fCgv) return setAuthError(errorText("cgv_required"));
+    }
+    setAuthBusy(true);
+    const res =
+      authMode === "signup"
+        ? await signup({ email: fEmail, tel: fTel, nom: fNom, prenom: fPrenom, password: fPass, cgv: fCgv })
+        : await login(fEmail, fPass);
+    setAuthBusy(false);
+    if (res.ok) {
+      setUser(res.user);
+      setAuthOpen(false);
+      setFPass("");
+      setFPass2("");
+    } else {
+      setAuthError(errorText(res.error));
+    }
+  };
+  const doLogout = async () => {
+    await logout();
+    setUser(null);
+  };
+
   useEffect(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("argentier-lang") : null;
     setLang((["fr", "en", "de", "es", "it"] as Lang[]).includes(saved as Lang) ? (saved as Lang) : detectLang(navigator.language));
+  }, []);
+
+  // Rétablit la session de compte au chargement (jeton en localStorage).
+  useEffect(() => {
+    me().then((u) => {
+      if (u) setUser(u);
+    });
   }, []);
   const changeLang = (l: Lang) => {
     setLang(l);
@@ -91,8 +163,22 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
               </button>
             ))}
           </div>
+          {user ? (
+            <div className="lp-acct">
+              <span className="lp-acct-name" title={user.email}>
+                {user.prenom || user.email}
+              </span>
+              <button className="lp-acct-out" onClick={doLogout}>
+                {L(lang, { fr: "Déconnexion", en: "Log out", de: "Abmelden", es: "Salir", it: "Esci" })}
+              </button>
+            </div>
+          ) : (
+            <button className="lp-acct-in" onClick={() => openAuth("login")}>
+              {L(lang, { fr: "Connexion", en: "Log in", de: "Anmelden", es: "Iniciar sesión", it: "Accedi" })}
+            </button>
+          )}
           <button className="lp-demo-top" onClick={() => setGate(true)}>
-            {L(lang, { fr: "Voir la démo", en: "See the demo", de: "Demo ansehen", es: "Ver la demo", it: "Vedi la demo" })} →
+            {L(lang, { fr: "Tester gratuitement", en: "Try for free", de: "Kostenlos testen", es: "Probar gratis", it: "Prova gratis" })} →
           </button>
         </div>
       </header>
@@ -120,9 +206,9 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
         </p>
         <div className="lp-cta">
           <button className="lp-demo" onClick={() => setGate(true)}>
-            {L(lang, { fr: "Voir la démo", en: "See the demo", de: "Demo ansehen", es: "Ver la demo", it: "Vedi la demo" })}
+            {L(lang, { fr: "Tester gratuitement", en: "Try for free", de: "Kostenlos testen", es: "Probar gratis", it: "Prova gratis" })}
           </button>
-          <a className="lp-cta-login" href="/api/auth/qonto/start">
+          <button className="lp-cta-login" onClick={openQonto}>
             {L(lang, {
               fr: "Connecter mon compte Qonto",
               en: "Connect my Qonto account",
@@ -130,16 +216,18 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
               es: "Conectar mi cuenta Qonto",
               it: "Collega il mio conto Qonto",
             })}
-          </a>
-          <a className="lp-cta-ghost" href="#waitlist">
-            {L(lang, {
-              fr: "Rejoindre la liste d'attente",
-              en: "Join the waitlist",
-              de: "Warteliste beitreten",
-              es: "Unirse a la lista de espera",
-              it: "Iscriviti alla lista d'attesa",
-            })}
-          </a>
+          </button>
+          {!user && (
+            <button className="lp-cta-ghost" onClick={() => openAuth("login")}>
+              {L(lang, {
+                fr: "Connexion",
+                en: "Log in",
+                de: "Anmelden",
+                es: "Iniciar sesión",
+                it: "Accedi",
+              })}
+            </button>
+          )}
         </div>
         <div className="lp-hook">
           <span className="lp-hook-num">{p.hookNum}</span>
@@ -367,11 +455,134 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
               <button className="lp-gate-btn" type="submit" disabled={sending}>
                 {sending
                   ? "…"
-                  : L(lang, { fr: "Voir la démo →", en: "See the demo →", de: "Demo ansehen →", es: "Ver la demo →", it: "Vedi la demo →" })}
+                  : L(lang, { fr: "Tester gratuitement →", en: "Try for free →", de: "Kostenlos testen →", es: "Probar gratis →", it: "Prova gratis →" })}
               </button>
             </form>
             <button className="lp-gate-cancel" onClick={() => setGate(false)} disabled={sending}>
               {L(lang, { fr: "Annuler", en: "Cancel", de: "Abbrechen", es: "Cancelar", it: "Annulla" })}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modale de compte — connexion / inscription (mot de passe choisi, jamais envoyé par email) */}
+      {authOpen && (
+        <div className="lp-gate" role="dialog" aria-modal="true" onClick={() => !authBusy && setAuthOpen(false)}>
+          <div className="lp-auth-box" onClick={(e) => e.stopPropagation()}>
+            <p className="lp-gate-title">
+              {authMode === "login"
+                ? L(lang, { fr: "Connexion", en: "Log in", de: "Anmelden", es: "Iniciar sesión", it: "Accedi" })
+                : L(lang, { fr: "Créer un compte", en: "Create an account", de: "Konto erstellen", es: "Crear una cuenta", it: "Crea un account" })}
+            </p>
+            <p className="lp-gate-sub">
+              {authMode === "login"
+                ? L(lang, {
+                    fr: "Connecte-toi pour brancher ton compte Qonto.",
+                    en: "Log in to connect your Qonto account.",
+                    de: "Melde dich an, um dein Qonto-Konto zu verbinden.",
+                    es: "Inicia sesión para conectar tu cuenta Qonto.",
+                    it: "Accedi per collegare il tuo conto Qonto.",
+                  })
+                : L(lang, {
+                    fr: "Crée ton compte, puis connecte Qonto en lecture seule.",
+                    en: "Create your account, then connect Qonto read-only.",
+                    de: "Erstelle dein Konto, dann verbinde Qonto nur lesend.",
+                    es: "Crea tu cuenta y luego conecta Qonto en solo lectura.",
+                    it: "Crea il tuo account, poi collega Qonto in sola lettura.",
+                  })}
+            </p>
+            <form className="lp-auth-form" onSubmit={submitAuth}>
+              {authMode === "signup" && (
+                <div className="lp-auth-row2">
+                  <input
+                    className="lp-gate-input"
+                    type="text"
+                    required
+                    placeholder={L(lang, { fr: "Prénom", en: "First name", de: "Vorname", es: "Nombre", it: "Nome" })}
+                    value={fPrenom}
+                    onChange={(e) => setFPrenom(e.target.value)}
+                    aria-label={L(lang, { fr: "Prénom", en: "First name", de: "Vorname", es: "Nombre", it: "Nome" })}
+                  />
+                  <input
+                    className="lp-gate-input"
+                    type="text"
+                    required
+                    placeholder={L(lang, { fr: "Nom", en: "Last name", de: "Nachname", es: "Apellido", it: "Cognome" })}
+                    value={fNom}
+                    onChange={(e) => setFNom(e.target.value)}
+                    aria-label={L(lang, { fr: "Nom", en: "Last name", de: "Nachname", es: "Apellido", it: "Cognome" })}
+                  />
+                </div>
+              )}
+              <input
+                className="lp-gate-input"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder={L(lang, { fr: "ton@email.com", en: "you@email.com", de: "du@email.com", es: "tu@email.com", it: "tua@email.com" })}
+                value={fEmail}
+                onChange={(e) => setFEmail(e.target.value)}
+                aria-label="email"
+              />
+              {authMode === "signup" && (
+                <input
+                  className="lp-gate-input"
+                  type="tel"
+                  placeholder={L(lang, { fr: "Téléphone", en: "Phone", de: "Telefon", es: "Teléfono", it: "Telefono" })}
+                  value={fTel}
+                  onChange={(e) => setFTel(e.target.value)}
+                  aria-label={L(lang, { fr: "Téléphone", en: "Phone", de: "Telefon", es: "Teléfono", it: "Telefono" })}
+                />
+              )}
+              <input
+                className="lp-gate-input"
+                type="password"
+                required
+                minLength={8}
+                autoComplete={authMode === "login" ? "current-password" : "new-password"}
+                placeholder={L(lang, { fr: "Mot de passe", en: "Password", de: "Passwort", es: "Contraseña", it: "Password" })}
+                value={fPass}
+                onChange={(e) => setFPass(e.target.value)}
+                aria-label={L(lang, { fr: "Mot de passe", en: "Password", de: "Passwort", es: "Contraseña", it: "Password" })}
+              />
+              {authMode === "signup" && (
+                <input
+                  className="lp-gate-input"
+                  type="password"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder={L(lang, { fr: "Confirmer le mot de passe", en: "Confirm password", de: "Passwort bestätigen", es: "Confirmar contraseña", it: "Conferma password" })}
+                  value={fPass2}
+                  onChange={(e) => setFPass2(e.target.value)}
+                  aria-label={L(lang, { fr: "Confirmer le mot de passe", en: "Confirm password", de: "Passwort bestätigen", es: "Confirmar contraseña", it: "Conferma password" })}
+                />
+              )}
+              {authMode === "signup" && (
+                <label className="lp-auth-cgv">
+                  <input type="checkbox" checked={fCgv} onChange={(e) => setFCgv(e.target.checked)} />
+                  <span>
+                    {L(lang, { fr: "J'accepte les", en: "I accept the", de: "Ich akzeptiere die", es: "Acepto las", it: "Accetto i" })}{" "}
+                    <a href="/cgv" target="_blank" rel="noopener noreferrer">
+                      {L(lang, { fr: "conditions générales", en: "terms", de: "AGB", es: "condiciones", it: "termini" })}
+                    </a>{" "}
+                    *
+                  </span>
+                </label>
+              )}
+              {authError && <p className="lp-auth-err">{authError}</p>}
+              <button className="lp-gate-btn" type="submit" disabled={authBusy}>
+                {authBusy
+                  ? "…"
+                  : authMode === "login"
+                    ? L(lang, { fr: "Se connecter", en: "Log in", de: "Anmelden", es: "Iniciar sesión", it: "Accedi" })
+                    : L(lang, { fr: "Créer mon compte", en: "Create my account", de: "Konto erstellen", es: "Crear mi cuenta", it: "Crea il mio account" })}
+              </button>
+            </form>
+            <button className="lp-gate-cancel" onClick={() => openAuth(authMode === "login" ? "signup" : "login")}>
+              {authMode === "login"
+                ? L(lang, { fr: "Pas de compte ? S'inscrire", en: "No account? Sign up", de: "Kein Konto? Registrieren", es: "¿Sin cuenta? Regístrate", it: "Nessun account? Registrati" })
+                : L(lang, { fr: "Déjà un compte ? Se connecter", en: "Already have an account? Log in", de: "Schon ein Konto? Anmelden", es: "¿Ya tienes cuenta? Inicia sesión", it: "Hai già un account? Accedi" })}
             </button>
           </div>
         </div>
@@ -437,11 +648,28 @@ const CSS = `
   padding:15px 32px;cursor:pointer;box-shadow:0 8px 30px color-mix(in srgb,var(--yellow) 30%,transparent);transition:transform .08s ease;}
 .lp-demo:hover{transform:translateY(-2px);}
 .lp-cta-login{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--yellow);color:var(--yellow);
-  border-radius:99px;font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;}
+  border-radius:99px;font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;
+  background:none;font-family:inherit;cursor:pointer;}
 .lp-cta-login:hover{background:color-mix(in srgb,var(--yellow) 14%,transparent);}
 .lp-cta-ghost{display:inline-flex;align-items:center;border:1px solid var(--line);color:var(--ink);border-radius:99px;
-  font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;}
+  font-size:16px;font-weight:600;padding:15px 28px;text-decoration:none;transition:background .12s;
+  background:none;font-family:inherit;cursor:pointer;}
 .lp-cta-ghost:hover{background:rgba(255,255,255,.08);}
+
+.lp-acct{display:inline-flex;align-items:center;gap:10px;}
+.lp-acct-name{font-size:13px;font-weight:600;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lp-acct-out{border:1px solid var(--line);background:none;color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:99px;cursor:pointer;transition:background .12s;}
+.lp-acct-out:hover{background:rgba(255,255,255,.08);}
+.lp-acct-in{border:1px solid var(--line);background:none;color:var(--ink);font-family:inherit;font-size:13px;font-weight:600;padding:8px 16px;border-radius:99px;cursor:pointer;transition:background .12s;}
+.lp-acct-in:hover{background:rgba(255,255,255,.08);}
+.lp-auth-box{background:#1b1b19;border:1px solid var(--line);border-radius:18px;padding:28px;width:100%;max-width:440px;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,.5);}
+.lp-auth-form{display:flex;flex-direction:column;gap:10px;text-align:left;}
+.lp-auth-row2{display:flex;gap:10px;}
+.lp-auth-row2 .lp-gate-input{flex:1;min-width:0;}
+.lp-auth-cgv{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:var(--ink2);line-height:1.4;margin-top:2px;cursor:pointer;}
+.lp-auth-cgv input{margin-top:2px;accent-color:var(--yellow);flex:none;}
+.lp-auth-cgv a{color:var(--yellow);}
+.lp-auth-err{color:#ff8f8f;font-size:12.5px;margin:2px 0 0;}
 .lp-hook{display:inline-flex;align-items:baseline;gap:16px;padding-top:40px;border-top:1px solid var(--line);flex-wrap:wrap;justify-content:center;max-width:560px;}
 .lp-hook-num{font-family:'Space Grotesk';font-weight:700;font-size:clamp(56px,13vw,110px);line-height:.85;color:var(--yellow);letter-spacing:-.04em;}
 .lp-hook-cap{font-family:'Space Grotesk';font-weight:600;font-size:clamp(17px,3vw,24px);color:var(--ink);max-width:300px;text-align:left;}
