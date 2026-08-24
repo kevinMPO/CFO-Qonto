@@ -148,6 +148,27 @@ const CORS: Record<string, string> = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+/**
+ * Rate-limit best-effort par IP, adossé au KV WAITLIST (fenêtre glissante).
+ * Pas d'IP (dev local, appel interne) → on ne bloque pas. TTL KV mini = 60 s.
+ * Objectif : empêcher le spam de /waitlist (pollution KV) et les floods sur /mcp,
+ * sans casser le positionnement « /mcp appelable par n'importe quel client ».
+ */
+async function rateLimit(
+  env: Env,
+  bucket: string,
+  ip: string,
+  limit: number,
+  windowSec: number,
+): Promise<boolean> {
+  if (!ip) return true;
+  const key = `rl:${bucket}:${ip}`;
+  const count = parseInt((await env.WAITLIST.get(key)) || "0", 10);
+  if (count >= limit) return false;
+  await env.WAITLIST.put(key, String(count + 1), { expirationTtl: windowSec });
+  return true;
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -157,6 +178,14 @@ export default {
       if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405, headers: CORS });
+      }
+      // Anti-spam : 5 inscriptions max par IP et par heure.
+      const wlIp = request.headers.get("CF-Connecting-IP") || "";
+      if (!(await rateLimit(env, "wl", wlIp, 5, 3600))) {
+        return Response.json(
+          { ok: false, error: "rate_limited" },
+          { status: 429, headers: CORS },
+        );
       }
       let email = "";
       let lang = "";
@@ -183,6 +212,12 @@ export default {
       return new Response("Argentier MCP — Streamable HTTP sur POST /mcp · POST /waitlist");
     }
     if (url.pathname.startsWith("/mcp")) {
+      // Anti-flood : 120 requêtes max par IP et par minute (généreux pour un
+      // vrai client MCP, bloque les abus). L'endpoint reste sans auth.
+      const mcpIp = request.headers.get("CF-Connecting-IP") || "";
+      if (!(await rateLimit(env, "mcp", mcpIp, 120, 60))) {
+        return new Response("Too Many Requests", { status: 429, headers: CORS });
+      }
       return ArgentierMCP.serve("/mcp", { binding: "ArgentierMCP" }).fetch(request, env, ctx);
     }
     return new Response("Not found", { status: 404 });
