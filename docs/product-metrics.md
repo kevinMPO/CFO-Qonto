@@ -30,9 +30,14 @@ The load-bearing facts:
   proven monthly drop, not an observed annual fact.** The framework treats it as such throughout.
 - `engine.py classify()` uses only the hardcoded `PRO_KEYWORDS`/`PERSO_KEYWORDS` — it **never loads
   `profile.json`**. CLAUDE.md's "extensibles via profile.json" is a design intent, **not wired in code**.
-- `settings.json` hard-denies Qonto write tools, but grants `mcp__linkup__*` and `mcp__brightdata__*`
-  with **unrestricted args**, and does **not** deny the send-capable non-Qonto MCPs present in the
-  environment (Gmail `create_draft`, Instantly, Apollo sequences).
+- **Two surfaces, two enforcement levels.** The **skill** (Claude Code + Qonto/Linkup MCP) relies on
+  `settings.json` (Qonto writes hard-denied; Gmail/Instantly/Apollo now hard-denied too) plus prompt
+  discipline for PII — `mcp__linkup__*`/`mcp__brightdata__*` args are not filtered there. The **web
+  app** (`web/lib/`) adds **code-level, fail-closed guards**: `privacy/egress.ts` (`assertNoPii`
+  before every outbound `fetch`) and `mcp/readonly-guard.ts` (`assertReadOnly` — GET-only + path
+  allowlist as the client's single network exit). **291 unit tests** pin these two layers.
+- `engine.py classify()` still uses only hardcoded keywords (above); `settings.json` still grants
+  `linkup`/`brightdata` unrestricted args **on the skill path** (the web path is filtered in code).
 
 Every metric that needs data we don't keep yet is marked **(to instrument)** and collected in §6.
 
@@ -214,7 +219,8 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 | **Reversibility** | Irreversible banking side-effects | **= 0** | Output is a file in `drafts/`; read-only ⇒ no banking side-effect | **HARD** (follows from read-only) |
 | **Explainability** | Displayed euro ≠ `engine.py` euro | **= 0** | Rule #2 + 24 `unittest` tests pin engine math; **APS sum now recomputed by `sum_ledger.py`** (not LLM) | **SOFT + tests** — *sum gap closed; remaining backlog: assert card/letter € == engine output.* |
 | **Traceability** | Approved decision without a ledger entry | **= 0** | `audit.md` step f writes each decision; `verify.md` acts only on those | **SOFT** (`decisions[]` empty today) |
-| **Confidentiality (zero PII to web)** | PII fields sent to Linkup/Bright Data | **= 0** | `audit.md` step c tells the LLM to send merchant+category only | **SOFT** — *`settings.json` grants `linkup`/`brightdata` unrestricted args; backlog: a technical field filter, not just a prompt.* |
+| **Confidentiality (zero PII to web)** | PII fields sent to Linkup/Bright Data | **= 0** | **Web app: `web/lib/privacy/egress.ts` — `sanitizeMerchantQuery` builds the only allowed payload, `assertNoPii` fail-closes before every outbound `fetch` (Linkup + Anthropic); 59 tests.** Skill/MCP path: `audit.md` prompt (merchant + category only). | **HARD (web app)** · SOFT (skill MCP) |
+| **Read-only Qonto (web app OAuth path)** | Non-GET or off-allowlist Qonto request | **= 0** | `web/lib/mcp/readonly-guard.ts` — `assertReadOnly` gates the client's single network exit (GET/HEAD only + exhaustive path allowlist); 135 tests | **HARD** (defeats the write scopes the OAuth token can't refuse) |
 | **Recommendation vs decision** | Deliverables sent automatically by the agent | **= 0** | `drafts/` "PRÊT — À ENVOYER PAR TOI" label; Qonto banking sends sit behind the user's own SCA; **Gmail / Instantly / Apollo now hard-denied in `settings.json`** | **HARD** for connected send MCPs — *the guarantee is only as complete as the deny-list; add any new send-capable MCP to `deny`.* |
 | **Respect critical suppliers** | Résiliation recommended vs an `intouchable` supplier | **= 0** | `audit.md` step d crosses `profile.json → fournisseurs_intouchables` | **SOFT** — *`profile.json` is empty and `engine.py` never reads it; backlog: enforce in the engine, not the prompt.* |
 | **Proof integrity (net-of-reversal)** | Proven euros later reversed and not removed | **= 0** | `verify.md` step 1(b)+3bis re-read every `prouve` decision; a reverted one flips to `reverte` and leaves the sum (`sum_ledger.py`, tracked in `economies_reversees_eur_an`) | **HARD** (self-correcting) — *the "×12 is safe" claim now holds: a resumed sub is caught at the next `/verify`.* |
@@ -223,8 +229,9 @@ prompt/convention, LLM could deviate · **BACKLOG** = claimed but not yet implem
 **Hardening backlog.**
 1. ✅ **Done — deny send-capable non-Qonto MCPs** (Gmail / Instantly / Apollo) in `settings.json`, so
    "autonomous sends = 0" is HARD for connected send MCPs, not convention.
-2. **Filter PII at the tool boundary** for `linkup`/`brightdata` (whitelist merchant + category args)
-   so "zero PII to web" is HARD.
+2. ✅ **Done (web app) — filter PII at the tool boundary.** `web/lib/privacy/egress.ts` fail-closes
+   before every outbound `fetch` (59 tests). *Still open on the skill/MCP path:* the LLM calls
+   `mcp__linkup__*` directly, so there it stays prompt-enforced until an MCP-level arg filter exists.
 3. ✅ **Done — deterministic ledger-sum + net-of-reversal.** `sum_ledger.py` (with `--check` drift
    guard) makes the North Star aggregate engine-computed; `/verify` re-reads every `prouve` decision
    and flips a reverted saving to `reverte`, which leaves the sum — the metric self-corrects.

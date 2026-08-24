@@ -110,7 +110,7 @@ statement, by an agent never allowed to touch the money.
 |---|---|---|
 | Qonto money-movement = 0 | `settings.json` deny + Qonto MCP cannot move money | **HARD** (two layers) |
 | Qonto write tools invoked = 0 | 8-read-tool allowlist | **HARD** |
-| PII to web = 0 | `audit.md` prompt only (`linkup`/`brightdata` args unrestricted) | **SOFT** — backlog: arg filter |
+| PII to web = 0 | web app: `assertNoPii` fail-closes before every egress fetch (`web/lib/privacy/egress.ts`, 59 tests); skill/MCP path: `audit.md` prompt | **HARD** (web app) · SOFT (skill) |
 | Autonomous sends = 0 | `drafts/` label **+ Gmail/Instantly/Apollo denied** in `settings.json` | **HARD** for connected send MCPs |
 | NSM aggregate = engine-summed | **`sum_ledger.py`** recomputes both scalars from `decisions[]` (`--check` guards drift) | **HARD** (was LLM-summed) |
 | Displayed € = engine € | rule #2 convention + 24 engine tests | **SOFT+tests** — backlog: assert displayed==engine |
