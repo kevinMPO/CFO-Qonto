@@ -1,17 +1,17 @@
 // ---------------------------------------------------------------------------
 // Historique des analyses — mémoire de l'entreprise.
 //
-// Persiste chaque score dans LibSQL (même base que la mémoire Mastra). Permet
+// Persiste chaque score dans LibSQL (même base que la mémoire Mastra) : permet
 // "cette société avait 15.8 lors de la dernière analyse" (§16) et pose le socle
-// de la surveillance périodique (§17 : détecter une variation > seuil).
+// de la surveillance périodique (§17).
 //
-// Léger : dépend seulement de @libsql/client (pas de tout le harnais Mastra),
-// pour rester utilisable côté serveur sans coût.
+// Robustesse serverless : @libsql/client (binaire natif) est importé
+// DYNAMIQUEMENT ; si indisponible, l'historique devient un no-op silencieux
+// (l'analyse fonctionne quand même, sans persistance cross-requête).
 // ---------------------------------------------------------------------------
 
 import path from "node:path";
 import fs from "node:fs";
-import { createClient, type Client } from "@libsql/client";
 import type { RiskScore } from "./types";
 
 function dbUrl(): string {
@@ -25,35 +25,37 @@ function dbUrl(): string {
   return `file:${path.join(base, "risk.db")}`;
 }
 
-let _client: Client | null = null;
-let _ready: Promise<void> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Client = any;
 
-function client(): Client {
-  if (!_client) {
-    const authToken = process.env.RISK_DB_AUTH_TOKEN;
-    _client = createClient({ url: dbUrl(), ...(authToken ? { authToken } : {}) });
+let _clientPromise: Promise<Client | null> | null = null;
+async function client(): Promise<Client | null> {
+  if (!_clientPromise) {
+    _clientPromise = (async () => {
+      try {
+        const { createClient } = await import("@libsql/client");
+        const authToken = process.env.RISK_DB_AUTH_TOKEN;
+        const c = createClient({ url: dbUrl(), ...(authToken ? { authToken } : {}) });
+        await c.execute(
+          `CREATE TABLE IF NOT EXISTS risk_history (
+             id INTEGER PRIMARY KEY AUTOINCREMENT,
+             siren TEXT NOT NULL,
+             combined_score REAL,
+             financial_score REAL,
+             external_score REAL,
+             band TEXT,
+             critical INTEGER DEFAULT 0,
+             created_at TEXT NOT NULL
+           )`,
+        );
+        return c;
+      } catch (err) {
+        console.error("Historique LibSQL indisponible — persistance désactivée", err);
+        return null;
+      }
+    })();
   }
-  return _client;
-}
-
-async function ready(): Promise<void> {
-  if (!_ready) {
-    _ready = client()
-      .execute(
-        `CREATE TABLE IF NOT EXISTS risk_history (
-           id INTEGER PRIMARY KEY AUTOINCREMENT,
-           siren TEXT NOT NULL,
-           combined_score REAL,
-           financial_score REAL,
-           external_score REAL,
-           band TEXT,
-           critical INTEGER DEFAULT 0,
-           created_at TEXT NOT NULL
-         )`,
-      )
-      .then(() => {});
-  }
-  return _ready;
+  return _clientPromise;
 }
 
 export interface HistoryEntry {
@@ -67,8 +69,9 @@ export interface HistoryEntry {
 }
 
 export async function saveAnalysis(siren: string, score: RiskScore, nowIso?: string): Promise<void> {
-  await ready();
-  await client().execute({
+  const c = await client();
+  if (!c) return;
+  await c.execute({
     sql: `INSERT INTO risk_history
       (siren, combined_score, financial_score, external_score, band, critical, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -84,12 +87,13 @@ export async function saveAnalysis(siren: string, score: RiskScore, nowIso?: str
   });
 }
 
-/** Renvoie l'analyse précédente (la plus récente déjà en base) pour ce SIREN. */
+/** Analyse précédente (la plus récente déjà en base) pour ce SIREN, ou null. */
 export async function getPreviousAnalysis(
   siren: string,
 ): Promise<{ combinedScore: number | null; date: string } | null> {
-  await ready();
-  const res = await client().execute({
+  const c = await client();
+  if (!c) return null;
+  const res = await c.execute({
     sql: `SELECT combined_score, external_score, created_at
           FROM risk_history WHERE siren = ? ORDER BY created_at DESC LIMIT 1`,
     args: [siren],
@@ -105,12 +109,14 @@ export async function getPreviousAnalysis(
 
 /** Série historique (pour la surveillance future §17). */
 export async function getHistory(siren: string, limit = 24): Promise<HistoryEntry[]> {
-  await ready();
-  const res = await client().execute({
+  const c = await client();
+  if (!c) return [];
+  const res = await c.execute({
     sql: `SELECT * FROM risk_history WHERE siren = ? ORDER BY created_at DESC LIMIT ?`,
     args: [siren, limit],
   });
-  return res.rows.map((r) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return res.rows.map((r: any) => ({
     siren: String(r.siren),
     combinedScore: (r.combined_score as number | null) ?? null,
     financialScore: (r.financial_score as number | null) ?? null,

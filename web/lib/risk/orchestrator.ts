@@ -100,7 +100,7 @@ async function gatherWebSignals(
   });
 
   const tools = { ...(await linkupTools()), recordSignal, noteSearch };
-  const agent = makeRiskAgent(tools);
+  const agent = await makeRiskAgent(tools);
 
   const prompt = [
     `Analyse le risque de l'entreprise suivante à partir de sources web (Linkup).`,
@@ -172,7 +172,7 @@ async function explainScore(
       strengths.length ? "Points forts : " + strengths.join(", ") + "." : ""
     } ${watchpoints.length ? "Vigilance : " + watchpoints.join(", ") + "." : ""}`.trim();
   }
-  const agent = makeRiskAgent({});
+  const agent = await makeRiskAgent({});
   const summary = [
     `Entreprise : ${identity.raisonSociale} (SIREN ${identity.siren}).`,
     `Score financier : ${score.financialScore ?? "non disponible"} /20.`,

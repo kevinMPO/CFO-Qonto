@@ -126,6 +126,15 @@ const nextConfig = {
     "libsql",
   ],
 
+  // Force l'inclusion des binaires natifs LibSQL dans la fonction serverless
+  // /api/risk (sinon la mémoire/l'historique ne se chargent pas sur Vercel).
+  outputFileTracingIncludes: {
+    "/api/risk": [
+      "./node_modules/@libsql/**",
+      "./node_modules/libsql/**",
+    ],
+  },
+
   async headers() {
     return [{ source: "/:chemin*", headers: EN_TETES_SECURITE }];
   },
