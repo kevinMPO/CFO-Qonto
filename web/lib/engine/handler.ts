@@ -9,10 +9,52 @@ import type { z } from "zod";
 
 import { authenticateEngine } from "./api";
 import { reponseTropDeRequetes, verifierDebit } from "@/lib/api/rate-limit";
+import { octetsVersTexte } from "@/lib/encodage";
 
 function noStore(res: NextResponse): NextResponse {
   res.headers.set("Cache-Control", "no-store");
   return res;
+}
+
+/** Plafond du corps : 5000 tx ~ quelques centaines de Ko, on laisse 2 Mo de marge. */
+const MAX_BODY_BYTES = 2_000_000;
+
+/**
+ * Lit le corps en BORNANT l'allocation AVANT tout parse. `req.json()` bufferise
+ * puis parse la totalité du corps d'abord : les limites Zod (.max, .strict) ne
+ * s'appliquent qu'après et ne protègent pas la mémoire. On coupe donc en amont,
+ * y compris pour un envoi « chunked » sans Content-Length. `null` = trop gros.
+ */
+async function readCappedText(req: Request): Promise<string | null> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) return null;
+
+  const reader = req.body?.getReader();
+  if (!reader) {
+    const t = await req.text();
+    return t.length > MAX_BODY_BYTES ? null : t;
+  }
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    if (value) {
+      total += value.byteLength;
+      if (total > MAX_BODY_BYTES) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  }
+  const buf = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    buf.set(c, offset);
+    offset += c.byteLength;
+  }
+  return octetsVersTexte(buf);
 }
 
 /**
@@ -34,9 +76,14 @@ export async function handleEngine<S extends z.ZodTypeAny>(
   const debit = await verifierDebit(req, "engine", undefined, Date.now(), auth.token);
   if (!debit.autorise) return reponseTropDeRequetes(debit);
 
+  const text = await readCappedText(req);
+  if (text === null) {
+    return noStore(NextResponse.json({ error: "payload_too_large" }, { status: 413 }));
+  }
+
   let raw: unknown;
   try {
-    raw = await req.json();
+    raw = JSON.parse(text);
   } catch {
     return noStore(NextResponse.json({ error: "invalid_json" }, { status: 400 }));
   }

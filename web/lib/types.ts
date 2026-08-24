@@ -89,6 +89,9 @@ export interface Lever {
   to: string;
   /** Économie mensuelle en € — calculée par le moteur, jamais par le LLM. */
   saving: number;
+  /** Économie annuelle en € = saving × 12, calculée par le moteur (jamais un
+   *  client/LLM). Toujours présente en sortie de `build()`. */
+  savingYearly?: number;
   /** Motif du levier (abonnement / doublon / fx) — sert au tri et aux libellés. */
   motif?: Motif;
   risk: Risk;

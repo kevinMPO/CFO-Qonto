@@ -131,6 +131,33 @@ describe("frais de change : un seul levier agrégé, déterministe", () => {
     const r = run(monthly("Github", 21), [verdict("Github", "cancel")]);
     expect(r.levers.find((x) => x.motif === "fx")).toBeUndefined();
   });
+
+  it("un qonto_fee NON-fx (forfait, isFx=false) ne produit AUCUN levier fx", () => {
+    const txs = [
+      tx("Forfait Qonto", 29, "2026-08-05", { operationType: "qonto_fee", isFx: false }),
+      tx("Frais carte", 8, "2026-08-06", { operationType: "qonto_fee", isFx: false }),
+    ];
+    const r = run(txs, [], 30);
+    expect(r.levers.find((x) => x.motif === "fx")).toBeUndefined();
+  });
+
+  it("un marchand de frais fx classe pilotable n'est PAS compte deux fois", () => {
+    // isFx qonto_fee, vu 3x mensuellement, classe pilotable+renegotiate par le LLM.
+    const txs = monthly("Qonto Change", 10, { operationType: "qonto_fee", isFx: true });
+    const r = run(txs, [verdict("Qonto Change", "renegotiate")], 30);
+    // Un SEUL levier : le fx agrege. Pas de levier par-marchand en plus.
+    expect(r.levers.length).toBe(1);
+    expect(r.levers[0].motif).toBe("fx");
+    // Le run-rate n'inclut pas les frais de change (isoles dans le levier fx).
+    expect(r.totals.runRate).toBe(0);
+  });
+});
+
+describe("economie annuelle : calculee par le moteur", () => {
+  it("chaque levier porte savingYearly = saving × 12", () => {
+    const r = run(monthly("Loom", 20), [verdict("Loom", "cancel")]);
+    for (const l of r.levers) expect(l.savingYearly).toBe(l.saving * 12);
+  });
 });
 
 describe("déterminisme du moteur", () => {

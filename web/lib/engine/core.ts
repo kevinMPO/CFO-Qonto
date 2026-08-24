@@ -166,6 +166,22 @@ function deriveMotif(agg: MerchantAgg, v: MerchantVerdict): Motif {
   return "variable";
 }
 
+/**
+ * Transaction de FRAIS DE CHANGE — la SEULE à alimenter le levier fx agrégé.
+ * On exige `isFx` (posé en amont par isFxFee : `qonto_fee` + référence « fx », ou
+ * devise ≠ EUR avec un frais explicite) : chez Qonto TOUS les frais (forfait,
+ * carte, SEPA, retrait DAB, change) portent `operation_type = qonto_fee`, seul
+ * `isFx` isole le vrai change. Ces transactions sont ensuite EXCLUES de
+ * l'agrégation par marchand pour ne jamais être comptées deux fois (levier fx +
+ * levier par-marchand).
+ */
+function isFxLeverTx(t: Tx): boolean {
+  return t.isFx && (t.operationType === "qonto_fee" || (t.fee ?? 0) > 0);
+}
+function fxFeeAmount(t: Tx): number {
+  return t.operationType === "qonto_fee" ? t.amount : t.fee ?? 0;
+}
+
 export interface BuildInput {
   account: { name: string; bank: string; balance: number };
   windowLabel: Localized;
@@ -187,6 +203,12 @@ export function build(input: BuildInput): AnalyzeResult {
   const debits = txs.filter((t) => t.side === "debit");
   const credits = txs.filter((t) => t.side === "credit");
 
+  // Les frais de change sont ISOLÉS ici : ils alimentent le levier fx agrégé, et
+  // JAMAIS un levier par-marchand, le run-rate, les pôles ou les flux — sinon le
+  // même euro serait compté deux fois. Tout le reste passe par merchantDebits.
+  const feeDebits = debits.filter(isFxLeverTx);
+  const merchantDebits = debits.filter((t) => !isFxLeverTx(t));
+
   // Fenêtre « ce mois » = 30 derniers jours (le relevé affiché).
   const monthCutoff = ordinal(new Date().toISOString().slice(0, 10)) - 30;
   const recentDebits = debits.filter((t) => ordinal(t.date) >= monthCutoff);
@@ -202,7 +224,8 @@ export function build(input: BuildInput): AnalyzeResult {
   const totalOut = Math.round(recentDebits.reduce((s, t) => s + t.amount, 0));
 
   // --- run-rate pilotable + pôles (mensuel normalisé) -----------------------
-  const aggs = aggregate(debits, months);
+  // aggs = marchands HORS frais de change (isolés dans le levier fx).
+  const aggs = aggregate(merchantDebits, months);
   const poleSums = new Map<string, number>();
   let runRate = 0;
   for (const a of aggs) {
@@ -274,12 +297,13 @@ export function build(input: BuildInput): AnalyzeResult {
     leverNames.add(key);
   }
 
-  // Frais de change : levier AGRÉGÉ (règle métier — un seul levier). Les frais
-  // Qonto de change sont des transactions `qonto_fee`. 100 % pilotables (on peut
-  // les éviter), 100 % déterministes (somme des frais observés, normalisée /mois).
-  const fxFees = debits
-    .filter((t) => t.operationType === "qonto_fee" || (t.isFx && (t.fee ?? 0) > 0))
-    .reduce((s, t) => s + (t.operationType === "qonto_fee" ? t.amount : t.fee ?? 0), 0);
+  // Frais de change : levier AGRÉGÉ (règle métier — un seul levier). 100 %
+  // pilotables (on peut les éviter), 100 % déterministes (somme des frais
+  // observés, normalisée /mois).
+  //
+  // feeDebits = les transactions isolées plus haut par isFxLeverTx. Elles sont
+  // la SEULE source du levier fx : pas de double comptage possible.
+  const fxFees = feeDebits.reduce((s, t) => s + fxFeeAmount(t), 0);
   const fxMonthly = Math.round(fxFees / months);
   if (fxMonthly > 0) {
     levers.push({
@@ -308,6 +332,11 @@ export function build(input: BuildInput): AnalyzeResult {
     l.id = id;
     seenIds.add(id);
   }
+
+  // Économie ANNUELLE par levier = mensuel × 12, calculée PAR LE MOTEUR (jamais
+  // par un client / un LLM). Un consommateur — l'API, Claude Tag — reprend ce
+  // chiffre verbatim au lieu de multiplier lui-même (règle #2).
+  for (const l of levers) l.savingYearly = l.saving * 12;
 
   // --- score /100 : grille transparente ------------------------------------
   const drivers: Localized[] = [];
@@ -362,7 +391,7 @@ export function build(input: BuildInput): AnalyzeResult {
   };
 
   // --- flux nouveaux & anomalies -------------------------------------------
-  const flux = detectFlux(debits, aggs, verdictOf, monthCutoff);
+  const flux = detectFlux(merchantDebits, aggs, verdictOf, monthCutoff);
 
   // --- TVA déductible perdue : dépenses PRO sans justificatif ---------------
   // PÉRIMÈTRE ALIGNÉ SUR engine.py (règle #2, engine.py fait foi) : on ne compte

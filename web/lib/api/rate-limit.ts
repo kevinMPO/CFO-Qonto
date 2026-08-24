@@ -89,6 +89,12 @@ export const PLAFONDS: Readonly<Record<string, readonly Fenetre[]>> = Object.fre
   // payant en aval — la limite protège la ressource CPU et borne un client
   // fautif, pas un budget. Plafond par JETON (voir `cleAppelant`), pas par IP :
   // un client Claude Tag légitime tape depuis une IP mutualisée.
+  //
+  // Fenêtre unique de 60 s, à dessein : la cible de service est Vercel, où le KV
+  // partagé est absent (limiteur en mémoire par isolat, décision produit
+  // assumée). Sur KV Cloudflare, cette fenêtre unique n'est exacte que par colo
+  // (lecture éventuellement périmée ~60 s) ; l'enforcement cross-région exact
+  // relèverait d'un Durable Object clé par jeton — cf. en-tête de ce module.
   engine: Object.freeze([{ max: 60, secondes: 60 }]),
 });
 

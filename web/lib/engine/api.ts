@@ -162,7 +162,7 @@ export interface SimulateResult {
   monthly: number;
   annual: number;
   count: number;
-  levers: Array<{ id: string; label: string; saving: number; motif?: string; active: boolean }>;
+  levers: Array<{ id: string; label: string; saving: number; savingYearly: number; motif?: string; active: boolean }>;
 }
 
 /**
@@ -178,6 +178,7 @@ export function simulateFromBody(input: SimulateInput): SimulateResult {
     id: l.id,
     label: l.label,
     saving: l.saving,
+    savingYearly: l.savingYearly ?? l.saving * 12,
     motif: l.motif,
     active: override.has(l.id) ? override.get(l.id)! : l.active,
   }));

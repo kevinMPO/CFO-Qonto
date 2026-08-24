@@ -76,9 +76,13 @@ Exemple minimal :
 
 ## Présenter une reco
 
-Pour chaque levier renvoyé par le moteur : **nom · économie €/mois (× 12 = €/an,
-chiffre du moteur) · action · risque**. Si tu benchmarkes un prix (via une
-recherche web), chaque prix affiché = **source + date**, sinon « non vérifié ».
+Pour chaque levier renvoyé par le moteur : **nom · `saving` €/mois · `savingYearly`
+€/an · action · risque**. Les DEUX montants sont des champs du moteur, repris
+VERBATIM — tu ne multiplies rien, tu n'annualises rien toi-même (le moteur a déjà
+calculé `savingYearly = saving × 12`). Pour un total annuel sur plusieurs leviers,
+utilise le champ `annual` de `/api/v1/engine/simulate` (calculé par le moteur), pas
+une addition de ta tête. Si tu benchmarkes un prix (via une recherche web), chaque
+prix affiché = **source + date**, sinon « non vérifié ».
 
 ## Ce que tu ne fais jamais
 

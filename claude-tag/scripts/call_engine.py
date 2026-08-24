@@ -54,8 +54,13 @@ def _read_body(argv):
             path = argv[i + 1]
         except IndexError:
             _fail("--file attend un chemin")
-        with open(path, "r", encoding="utf-8") as fh:
-            raw = fh.read()
+        try:
+            with open(path, "r", encoding="utf-8") as fh:
+                raw = fh.read()
+        except OSError as exc:
+            # Fichier absent / dossier / permission : on rend le MEME contrat
+            # d'erreur JSON que le reste du script, jamais un traceback brut.
+            _fail("fichier illisible (%s) : %s" % (path, exc))
     else:
         raw = sys.stdin.read()
     if not raw.strip():
