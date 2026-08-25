@@ -12,7 +12,15 @@ import { z } from "zod";
 import { build } from "./lib/engine";
 import { categorizeByRules, classifyEI, type MerchantInput } from "./lib/categorize";
 import type { Tx } from "./lib/types";
-import { handleSignup, handleLogin, handleMe, handleLogout, authCors } from "./auth";
+import {
+  handleSignup,
+  handleLogin,
+  handleMe,
+  handleLogout,
+  handleVerify,
+  handleResendVerification,
+  authCors,
+} from "./auth";
 
 const RULES = [
   "1. Read-only Qonto : seuls les tools de lecture. Aucune écriture, aucun mouvement d'argent.",
@@ -213,11 +221,18 @@ export default {
     if (url.pathname.startsWith("/auth/")) {
       if (request.method === "OPTIONS") return authCors();
       const ip = request.headers.get("CF-Connecting-IP") || "";
-      if (url.pathname === "/auth/signup" || url.pathname === "/auth/login") {
-        if (request.method !== "POST") {
-          return new Response("Method not allowed", { status: 405, headers: CORS });
+      const postRoutes = ["/auth/signup", "/auth/login", "/auth/verify", "/auth/resend-verification"];
+      if (postRoutes.includes(url.pathname) && request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405, headers: CORS });
+      }
+      // /auth/resend-verification déclenche un envoi d'email (coûteux) : plafond
+      // serré, 3 par IP et par heure. Les autres routes POST : anti-brute-force
+      // classique, 10 par IP toutes les 5 minutes.
+      if (url.pathname === "/auth/resend-verification") {
+        if (!(await rateLimit(env, "resend", ip, 3, 3600))) {
+          return Response.json({ ok: false, error: "rate_limited" }, { status: 429, headers: CORS });
         }
-        // Anti-brute-force : 10 tentatives par IP toutes les 5 minutes.
+      } else if (postRoutes.includes(url.pathname)) {
         if (!(await rateLimit(env, "auth", ip, 10, 300))) {
           return Response.json({ ok: false, error: "rate_limited" }, { status: 429, headers: CORS });
         }
@@ -227,6 +242,8 @@ export default {
         if (url.pathname === "/auth/login") return await handleLogin(request, env);
         if (url.pathname === "/auth/me") return await handleMe(request, env);
         if (url.pathname === "/auth/logout") return await handleLogout(request, env);
+        if (url.pathname === "/auth/verify") return await handleVerify(request, env);
+        if (url.pathname === "/auth/resend-verification") return await handleResendVerification(request, env);
       } catch (err) {
         // Un bug d'auth doit rendre du JSON, jamais un 1101 brut. On journalise
         // le détail côté serveur mais on ne le renvoie PAS (pas de fuite interne).
