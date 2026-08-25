@@ -19,6 +19,7 @@ export interface Account {
   nom: string;
   prenom: string;
   tel: string;
+  verified: boolean;
 }
 
 export interface SignupInput {
@@ -104,6 +105,37 @@ export async function me(): Promise<Account | null> {
     /* réseau — on ne connecte pas, sans effacer le jeton (peut-être transitoire) */
   }
   return null;
+}
+
+/** Confirme un email depuis le lien reçu (page /verify). Aucun jeton requis. */
+export async function verifyEmail(token: string): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const res = await fetch(`${AUTH_BASE}/auth/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    return { ok: !!data.ok, error: data.error };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
+/** Renvoie l'email de confirmation à l'utilisateur connecté. */
+export async function resendVerification(): Promise<boolean> {
+  const token = getToken();
+  if (!token) return false;
+  try {
+    const res = await fetch(`${AUTH_BASE}/auth/resend-verification`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = (await res.json()) as { ok?: boolean };
+    return !!data.ok;
+  } catch {
+    return false;
+  }
 }
 
 export async function logout(): Promise<void> {

@@ -10,7 +10,7 @@
 import React, { useEffect, useState } from "react";
 import type { Lang } from "@/lib/types";
 import { detectLang, PITCH } from "@/lib/i18n";
-import { signup, login, me, logout, type Account } from "@/lib/account";
+import { signup, login, me, logout, resendVerification, type Account } from "@/lib/account";
 
 // Rend **gras** dans un texte.
 function emph(text: string, key: string): React.ReactNode[] {
@@ -46,6 +46,7 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
   const [fNom, setFNom] = useState("");
   const [fPrenom, setFPrenom] = useState("");
   const [fCgv, setFCgv] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const WAITLIST_URL = "https://argentier-mcp.bonjour-e83.workers.dev/waitlist";
   const storeEmail = async (address: string, source: string) => {
@@ -118,6 +119,10 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
     await logout();
     setUser(null);
   };
+  const doResend = async () => {
+    const ok = await resendVerification();
+    if (ok) setResent(true);
+  };
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? window.localStorage.getItem("argentier-lang") : null;
@@ -182,6 +187,29 @@ export default function Landing({ onDemo }: { onDemo: () => void }) {
           </button>
         </div>
       </header>
+
+      {user && !user.verified && (
+        <div className="lp-verify-bar">
+          <span>
+            {L(lang, {
+              fr: "Confirme ton email pour activer ton compte (vérifie ta boîte de réception).",
+              en: "Confirm your email to activate your account (check your inbox).",
+              de: "Bestätige deine E-Mail, um dein Konto zu aktivieren (Posteingang prüfen).",
+              es: "Confirma tu email para activar tu cuenta (revisa tu bandeja).",
+              it: "Conferma la tua email per attivare l'account (controlla la posta).",
+            })}
+          </span>
+          {resent ? (
+            <span className="lp-verify-done">
+              ✓ {L(lang, { fr: "Email renvoyé", en: "Email resent", de: "E-Mail erneut gesendet", es: "Email reenviado", it: "Email inviata di nuovo" })}
+            </span>
+          ) : (
+            <button className="lp-verify-btn" onClick={doResend}>
+              {L(lang, { fr: "Renvoyer l'email", en: "Resend email", de: "E-Mail erneut senden", es: "Reenviar email", it: "Invia di nuovo" })}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Hero */}
       <section className="lp-hero">
@@ -670,6 +698,13 @@ const CSS = `
 .lp-auth-cgv input{margin-top:2px;accent-color:var(--yellow);flex:none;}
 .lp-auth-cgv a{color:var(--yellow);}
 .lp-auth-err{color:#ff8f8f;font-size:12.5px;margin:2px 0 0;}
+.lp-verify-bar{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;
+  background:color-mix(in srgb,var(--yellow) 12%,transparent);border-bottom:1px solid color-mix(in srgb,var(--yellow) 30%,transparent);
+  padding:10px 20px;font-size:13.5px;color:var(--ink);}
+.lp-verify-btn{border:1px solid var(--yellow);background:none;color:var(--yellow);font-family:inherit;font-size:13px;font-weight:600;
+  padding:6px 14px;border-radius:99px;cursor:pointer;transition:background .12s;}
+.lp-verify-btn:hover{background:color-mix(in srgb,var(--yellow) 16%,transparent);}
+.lp-verify-done{color:var(--yellow);font-weight:600;font-size:13px;}
 .lp-hook{display:inline-flex;align-items:baseline;gap:16px;padding-top:40px;border-top:1px solid var(--line);flex-wrap:wrap;justify-content:center;max-width:560px;}
 .lp-hook-num{font-family:'Space Grotesk';font-weight:700;font-size:clamp(56px,13vw,110px);line-height:.85;color:var(--yellow);letter-spacing:-.04em;}
 .lp-hook-cap{font-family:'Space Grotesk';font-weight:600;font-size:clamp(17px,3vw,24px);color:var(--ink);max-width:300px;text-align:left;}
