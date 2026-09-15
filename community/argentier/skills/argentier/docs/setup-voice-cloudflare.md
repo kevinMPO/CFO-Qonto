@@ -39,7 +39,7 @@ claude plugin install cloudflare@cloudflare
 # → au 1er appel d'un outil Cloudflare, l'OAuth s'ouvre dans le navigateur
 
 # 2. Déployer (wrangler)
-npm i -D wrangler
+npm i -D wrangler@4.110.0
 npx wrangler@4.110.0 login # OAuth navigateur
 ```
 
