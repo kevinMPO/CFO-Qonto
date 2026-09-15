@@ -1,6 +1,12 @@
 ---
 name: qonto-carbon-ledger
 description: Spend-based carbon footprint estimator for Qonto accounts. Classifies real debits into emission categories (energy, travel, digital & cloud, purchased goods, services, catering) and applies sourced, dated monetary emission factors (kgCO2e/€, ADEME-style spend-based method) to produce an approximate annual footprint, dominant categories, multi-year trend, and the 3 most effective levers given actual spending. Read-only, honest about ±50% uncertainty — a pre-assessment, never a regulatory report. Use for "what's my company's carbon footprint?", "bilan carbone de ma boîte ?", "quels postes émettent le plus ?", "how much CO2 does my spending represent?", "empreinte carbone depuis mes dépenses".
+permissions:
+  mcp:
+    qonto: [get_organization, list_cash_flow_categories, list_labels, list_supplier_invoices, list_transactions]
+  network: []
+  env: []
+  tools: [Read]
 ---
 
 # Qonto Carbon Ledger
