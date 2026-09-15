@@ -233,7 +233,7 @@ Open this repo in **Claude Code** with the Qonto + Linkup MCPs connected, then:
 ### 3. Web app (landing + dashboard)
 ```bash
 cd web
-cp .env.example .env.local     # fill keys (or leave empty → demo data)
+cp env.example .env.local      # fill keys (or leave empty → demo data)
 npm install
 npm run dev                    # http://localhost:3000
 ```
@@ -245,8 +245,8 @@ Without Qonto/Anthropic keys the app runs on **demo data** (mock).
 ```bash
 cd my-app
 npm install --legacy-peer-deps
-npx wrangler dev               # local  →  POST http://localhost:8787/mcp
-npx wrangler login && npx wrangler deploy   # publish (needs your Cloudflare OAuth)
+npx wrangler@4.110.0 dev       # local  →  POST http://localhost:8787/mcp
+npx wrangler@4.110.0 login && npx wrangler@4.110.0 deploy   # publish (needs your Cloudflare OAuth)
 ```
 Exposes 4 tools: `argentier_rules`, `argentier_classify_ei`, `argentier_annualize`, `argentier_analyze`.
 
@@ -287,7 +287,7 @@ DAF Qonto/
 ## Deploy
 
 - **Web app** → Cloudflare Pages (`@cloudflare/next-on-pages`) or Vercel.
-- **MCP server** → `cd my-app && npx wrangler login && npx wrangler deploy`.
+- **MCP server** → `cd my-app && npx wrangler@4.110.0 login && npx wrangler@4.110.0 deploy`.
 - **Custom domain** `getargentier.com` → add it in the Cloudflare dashboard (Workers/Pages → Custom domains)
   or `wrangler` route. All keys live in **Cloudflare secrets** (`wrangler secret put`), never in the repo.
 

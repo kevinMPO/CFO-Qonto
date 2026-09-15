@@ -40,7 +40,7 @@ claude plugin install cloudflare@cloudflare
 
 # 2. Déployer (wrangler)
 npm i -D wrangler
-npx wrangler login         # OAuth navigateur
+npx wrangler@4.110.0 login # OAuth navigateur
 ```
 
 ### Architecture cible (déjà décrite dans landing-login-cloudflare.md)

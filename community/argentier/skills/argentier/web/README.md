@@ -37,7 +37,7 @@ Qonto (lecture seule)  ─▶  categorize.ts (Claude : étiquettes)  ─▶  eng
 
 ```bash
 npm install
-cp .env.example .env.local   # optionnel : renseigner les clés
+cp env.example .env.local    # optionnel : renseigner les clés
 npm run dev                  # http://localhost:3000
 ```
 
