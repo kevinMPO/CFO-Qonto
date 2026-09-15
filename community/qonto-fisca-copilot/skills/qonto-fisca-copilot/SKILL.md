@@ -13,6 +13,12 @@ description: >-
   deduct", tax breaks / niches, a SARL/TNS or EU-company deduction check, a
   review of a month's Qonto transactions for tax opportunities. Read-only, advisory —
   every figure is sourced and flagged; it never replaces the accountant.
+permissions:
+  mcp:
+    qonto: [get_attachment, get_organization, get_transaction, list_cash_flow_categories, list_labels, list_supplier_invoices, list_transaction_attachments, list_transactions]
+  network: []
+  env: []
+  tools: [Read, Bash]
 ---
 
 # Qonto fisca co-pilot
