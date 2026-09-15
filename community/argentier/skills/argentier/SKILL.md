@@ -15,6 +15,12 @@ allowed-tools: >-
   mcp__qonto__get_organization, mcp__qonto__list_transactions,
   mcp__qonto__list_labels, mcp__qonto__list_transaction_attachments,
   mcp__linkup__linkup-search, Bash, Read, Write
+permissions:
+  mcp:
+    qonto: [get_organization, list_client_invoices, list_labels, list_payment_links, list_transaction_attachments, list_transactions]
+  network: [api.anthropic.com, api.elevenlabs.io, api.linkup.so, argentier-mcp.bonjour-e83.workers.dev, thirdparty.qonto.com]
+  env: [ANTHROPIC_API_KEY, ARGENTIER_MODEL, ARGENTIER_WINDOW_DAYS, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, LINKUP_API_KEY, NEXT_PUBLIC_ELEVENLABS_AGENT_ID, QONTO_IBAN, QONTO_LOGIN, QONTO_SECRET_KEY]
+  tools: [Read, Bash]
 ---
 
 # Argentier — the CFO your business will never hire
