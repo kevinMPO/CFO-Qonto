@@ -11,4 +11,5 @@ Generated from every plugin's `.claude-plugin/plugin.json` after each merge to `
 <!-- skills:start -->
 | Plugin | Skills | What it does | Author | Tier |
 |---|---|---|---|---|
+| [`argentier`](./community/argentier) | `argentier` | The read-only CFO agent for Qonto. Use when the user wants to review, audit, optimize or cut business spending on their Qonto account — "where is my money going", "find savings", "spot duplicate tools / ghost subscriptions", "cancel or renegotiate a subscription", "am I overpaying", "prepare a… | [Kevin MAMERI](https://github.com/kevinMPO) | community |
 <!-- skills:end -->
