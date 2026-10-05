@@ -177,14 +177,14 @@
     </div>
     <div>
       <div class="badge"><span class="dot"></span>Qonto lecture seule</div>
-      <div class="meta">Exécution : <code>Claude Code</code><br/>Compte : EI · perso + pro mêlés<br/>Garde-fou : <code>.claude/settings.json</code></div>
+      <div class="meta">Exécution : <code>Claude Code</code><br/>Compte : EI · perso + pro mêlés<br/>Garde-fou : <code>SKILL.md</code> (lecture seule)</div>
     </div>
   </header>
 
   <!-- ============ CONSTITUTION ============ -->
   <h2>La constitution — 4 règles non négociables</h2>
   <div class="rules">
-    <div class="rule"><div class="rn">Règle 1</div><div class="rt">Read-only Qonto</div><div class="rd">Écriture dure-bloquée (<span class="mono">deny &gt; allow</span>). Aucun mouvement d'argent.</div></div>
+    <div class="rule"><div class="rn">Règle 1</div><div class="rt">Read-only Qonto</div><div class="rd">Seuls les tools de lecture déclarés dans <span class="mono">SKILL.md</span>. Aucun mouvement d'argent.</div></div>
     <div class="rule"><div class="rn">Règle 2</div><div class="rt">engine.py calcule</div><div class="rd">Tout montant € vient du moteur. Le LLM ne fait aucune arithmétique.</div></div>
     <div class="rule"><div class="rn">Règle 3</div><div class="rt">Zéro PII vers le web</div><div class="rd">Vers le benchmark : nom du marchand + catégorie. Rien d'autre.</div></div>
     <div class="rule"><div class="rn">Règle 4</div><div class="rt">Prix = source + date</div><div class="rd">Sinon rejet, 1 retry, puis « non vérifié ». Jamais inventé.</div></div>
@@ -206,7 +206,7 @@
 
       <div class="node">
         <div class="nh">🌐 Web</div>
-        <div class="nd"><span class="mono">Linkup</span> / <span class="mono">Bright Data</span> — grilles tarifaires publiques du marché.</div>
+        <div class="nd"><span class="mono">Linkup</span> — grilles tarifaires publiques du marché.</div>
         <span class="pill pii">Nom + catégorie only</span>
       </div>
 
@@ -330,7 +330,7 @@
 
   <div class="foot">
     <b>Rien n'est envoyé ni modifié sur le compte.</b> Argentier observe, calcule, propose — tu décides.
-    Les tools d'écriture Qonto sont durs-bloqués dans <code>.claude/settings.json</code> (<code>deny &gt; allow</code>) ;
+    La lecture seule repose sur les instructions du skill : seuls les tools Qonto de lecture déclarés dans <code>SKILL.md</code> sont appelés ;
     les clés MCP restent en scope local, hors du repo.
   </div>
 

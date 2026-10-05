@@ -9,7 +9,7 @@ Two diagrams (open in a browser; no real data, safe to share):
 
 ## The four non-negotiable rules
 
-1. **Read-only Qonto** — only read tools; every write tool hard-blocked (`deny > allow`).
+1. **Read-only Qonto** — by instruction: only the read tools declared in `SKILL.md`; never a write, transfer or card tool.
 2. **`engine.py` computes, never the model** — every euro is deterministic and auditable.
 3. **Zero PII to the web** — benchmarks send only a merchant name + category.
 4. **Every price = source + date** — or it's labelled "not verified". Never invented.
