@@ -113,8 +113,9 @@
 - **Trigger**: virement SARL → gérant libellé « remboursement compte courant
   associé » ou similaire.
 - **Nudge**: « Documente l'apport (PV/contrat, justification de trésorerie),
-  sinon risque de **présomption de distribution** (taxée). Et tu peux te faire
-  verser des **intérêts** sur ce compte courant (déductibles, voir niche C7). »
+  sinon risque de **présomption de distribution** (taxée). Pour information, les
+  **intérêts** éventuellement versés sur ce compte courant sont déductibles sous
+  plafond (voir C7) — à voir avec le comptable, pas une recommandation. »
 - **Source**: https://bofip.impots.gouv.fr/bofip/2429-PGP.html
 
 ### N9 — Honoraires & frais bancaires  · confidence: high
@@ -237,10 +238,13 @@
   déduction** de TVA.
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/943-PGP.html · https://www.service-public.fr/professionnels-entreprises/vosdroits/R19113
 
-### C15 — Placement de trésorerie d'entreprise  · confidence: medium
-- **What**: ✅ placer la trésorerie excédentaire (compte à terme, contrat de
-  capitalisation) — report d'imposition des produits jusqu'au dénouement.
-- **Condition**: ✅ trésorerie durablement excédentaire.
+### C15 — Fiscalité des placements de trésorerie d'entreprise  · confidence: medium
+- **What**: ℹ️ si la société détient des placements (compte à terme, contrat de
+  capitalisation), les produits suivent des règles d'imposition propres (report possible
+  jusqu'au dénouement pour certains contrats). **Information only** — the skill does not
+  recommend placing cash, nor which product: that is an investment decision for the
+  gérant with their accountant or financial advisor.
+- **Condition**: ✅ placements existants ou envisagés par le gérant lui-même.
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/4421-PGP.html
 
 ### C16 — Abandon de créance en compte courant (retour à meilleure fortune)  · confidence: medium
