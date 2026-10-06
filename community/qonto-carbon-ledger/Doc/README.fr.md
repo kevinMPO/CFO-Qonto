@@ -1,7 +1,7 @@
 # 🌍 qonto-carbon-ledger — Ton relevé bancaire est un registre carbone qui s'ignore
 
 > **Hackathon Qonto × Anthropic MCP (10-13/07/2026)** · Agent Skill pour le MCP Qonto
-> **100 % lecture seule** : le skill estime et explique, il n'écrit rien, ne déplace rien, ne vend rien.
+> **Qonto en lecture seule** : le skill ne modifie pas le compte et ne déplace pas d'argent. Un dashboard HTML peut être enregistré localement.
 
 ---
 
@@ -42,7 +42,7 @@ C'est un **pré-bilan d'orientation**, pas un bilan réglementaire — et le ski
 
 ![Schéma fonctionnel](assets/functional.fr.png)
 
-**Que des traits pleins** : ce skill est 100 % lecture. Aucune écriture, aucune demande de virement, aucun paiement — il n'y a littéralement rien à approuver. Le seul livrable est de l'information : des tableaux et un dashboard.
+**Que des traits pleins** : ce skill lit les données Qonto sans modifier le compte ni effectuer de paiement. Il fournit des tableaux et peut enregistrer localement un dashboard HTML contenant des dépenses classées et des noms de contreparties.
 
 ## 🧮 Facteurs d'émission embarqués (indicatifs, méthode dépenses)
 
@@ -88,7 +88,7 @@ La démo ≤ 3 min jointe à la PR suit le storyboard : le problème (les TPE n'
 - **Estimation d'ordre de grandeur, pas un bilan réglementaire** (BEGES / CSRD / GHG Protocol) — rappelé dans chaque rapport ; pour un bilan officiel : prestataire spécialisé
 - Chaque facteur affiché avec sa **source et son millésime** ; chaque chiffre avec sa **fourchette** — jamais de fausse précision (« ~9 tCO2e (4,5–13,5) », pas « 9,37 »)
 - **Jamais de compensation vendue** ni recommandée
-- 100 % lecture seule ; IBAN masqués (4 derniers chiffres) ; pagination ≤ 50 partout
+- Qonto en lecture seule ; dashboard HTML local optionnel ; IBAN masqués (4 derniers chiffres) ; pagination ≤ 50 partout
 - Pays ≠ FR : méthode identique, facteurs annoncés comme à adapter — jamais de calibration locale prétendue
 - Poste « non classé » > ~20 % des dépenses → le skill dit que l'estimation est fragile et propose de labelliser les principales contreparties
 

@@ -1,7 +1,7 @@
 # 🌍 qonto-carbon-ledger — Your bank statement is secretly a carbon ledger
 
 > **Qonto × Anthropic MCP Hackathon submission** · Agent Skill for the Qonto MCP
-> **100 % read-only**: the skill estimates and explains — it never writes, never moves money, never sells anything.
+> **Qonto read-only**: the skill never changes your account or moves money. An optional HTML dashboard may be saved locally.
 
 ---
 
@@ -42,7 +42,7 @@ It's an orientation **pre-assessment**, not a regulatory report — and the skil
 
 ![Functional diagram](assets/functional.en.png)
 
-**Solid arrows only**: this skill is 100 % read. No write, no transfer request, no payment — there is literally nothing to approve. The only deliverable is information: tables and a dashboard.
+**Solid arrows only**: this skill only reads Qonto data. It cannot transfer money or change your account. It returns tables and may save an HTML dashboard containing categorized spend and counterparty data locally.
 
 ## 🧪 Holds up on messy data
 
@@ -77,7 +77,7 @@ The ≤ 3-minute demo attached to the PR walks through: the problem (small busin
 - **Order-of-magnitude estimate, not a regulatory carbon report** (BEGES / CSRD / GHG Protocol) — repeated in every report; for an official assessment: a specialized provider
 - Every factor shown with its **source and vintage**; every figure with its **range** — no false precision ("~9 tCO2e (4.5–13.5)", never "9.37")
 - **Never sells or recommends carbon offsets**
-- 100 % read-only · IBANs masked (last 4 digits) · pagination ≤ 50 everywhere
+- Qonto read-only; optional local HTML dashboard · IBANs masked (last 4 digits) · pagination ≤ 50 everywhere
 
 ---
 

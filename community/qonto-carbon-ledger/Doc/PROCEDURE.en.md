@@ -19,7 +19,7 @@
 ### Step 3 — (Optional) Connect the Datagouv MCP
 If a **Datagouv** connector is present, the skill offers to cross-check its embedded factors against current ADEME datasets. Otherwise it uses its embedded (sourced, dated) factors and says so — **nothing else to install**.
 
-> 💡 No sub-account, no write, no approval: the skill is 100 % read-only.
+> 💡 Qonto access is read-only. An optional HTML dashboard may be saved locally.
 
 ## 2️⃣ Typical usage (the 2-minute footprint)
 
@@ -51,14 +51,13 @@ If a **Datagouv** connector is present, the skill offers to cross-check its embe
 |---|---|---|
 | `list_transactions` fails right away | Missing `bank_account_id`/`iban` | The skill **always** calls `get_organization` first |
 | Huge / truncated responses | Pagination too wide | `per_page` ≤ 50, 3-month windows — handled by the skill |
-| `403 missing oauth scope` on `list_cash_flow_categories` | Outside the claude.ai connector scope | Expected — the skill classifies via counterparties + **labels** instead |
 | Many "unclassified" debits | Ambiguous counterparties, no labels | Label your top counterparties in Qonto; above ~20 % the skill warns the estimate is weak |
 | Footprint looks huge | A one-off purchase (vehicle, machine) blended into the flow | The skill flags purchases ≥ ~€5,000 apart — check the "one-offs" line |
 | Country ≠ France | Factors calibrated for FR/EU | Identical method, factors flagged as needing adaptation — the estimate is still produced and tagged |
 
 ## 🔒 Security reminder
 
-The skill is **100 % read-only**: no write tool, no transfer request, no payment — there is nothing
-to approve. It **never** sells or recommends carbon offsets. Its figures are **orders of magnitude**
+The skill **only reads Qonto data**: no transfer request or payment. It can save an optional local
+HTML dashboard containing categorized spend and counterparty data. It **never** sells or recommends carbon offsets. Its figures are **orders of magnitude**
 (±50 % and more, printed everywhere): for a regulatory assessment (BEGES / CSRD), use a specialized
 provider — the skill itself will remind you.

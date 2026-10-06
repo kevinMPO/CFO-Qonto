@@ -19,7 +19,7 @@
 ### Étape 3 — (Optionnel) Connecter le MCP Datagouv
 Si le connecteur **Datagouv** est présent, le skill propose de recouper ses facteurs embarqués avec les référentiels ADEME à jour. Sinon, il utilise ses facteurs embarqués (sourcés, millésimés) et le dit — **rien d'autre à installer**.
 
-> 💡 Aucun sous-compte, aucune écriture, aucune approbation : le skill est 100 % lecture seule.
+> 💡 Le compte Qonto reste en lecture seule. Un dashboard HTML peut être enregistré localement.
 
 ## 2️⃣ Utilisation type (le bilan en 2 minutes)
 
@@ -51,14 +51,13 @@ Si le connecteur **Datagouv** est présent, le skill propose de recouper ses fac
 |---|---|---|
 | `list_transactions` échoue d'emblée | `bank_account_id`/`iban` manquant | Le skill appelle **toujours** `get_organization` d'abord |
 | Réponses énormes / tronquées | Pagination trop large | `per_page` ≤ 50, fenêtres de 3 mois — géré par le skill |
-| `403 missing oauth scope` sur `list_cash_flow_categories` | Hors périmètre du connecteur claude.ai | Normal — le skill classe via contreparties + **labels** à la place |
 | Beaucoup de débits « non classés » | Contreparties ambiguës, pas de labels | Labelliser les principales contreparties dans Qonto ; au-delà de ~20 % le skill prévient que l'estimation est fragile |
 | Empreinte qui semble énorme | Gros achat ponctuel (véhicule, machine) noyé dans le flux | Le skill isole les achats ≥ ~5 000 € — vérifier la ligne « ponctuels » |
 | Pays ≠ France | Facteurs calibrés FR/UE | Méthode identique, facteurs annoncés comme à adapter — l'estimation reste produite et taguée |
 
 ## 🔒 Rappel sécurité
 
-Le skill est **100 % lecture seule** : aucun outil d'écriture, aucune demande de virement, aucun paiement —
-il n'y a rien à approuver. Il ne vend et ne recommande **jamais** de compensation carbone. Ses chiffres sont
+Le skill **lit les données Qonto sans modifier le compte** : aucun virement ni paiement. Il peut enregistrer
+localement un dashboard HTML contenant des dépenses classées et des noms de contreparties. Il ne vend et ne recommande **jamais** de compensation carbone. Ses chiffres sont
 des **ordres de grandeur** (±50 % et plus, affiché partout) : pour un bilan réglementaire (BEGES / CSRD),
 passe par un prestataire spécialisé — le skill te le rappellera lui-même.

@@ -1,10 +1,10 @@
 ---
 name: qonto-carbon-ledger
-description: Spend-based carbon footprint estimator for Qonto accounts. Classifies real debits into emission categories (energy, travel, digital & cloud, purchased goods, services, catering) and applies sourced, dated monetary emission factors (kgCO2e/€, ADEME-style spend-based method) to produce an approximate annual footprint, dominant categories, multi-year trend, and the 3 most effective levers given actual spending. Read-only, honest about ±50% uncertainty — a pre-assessment, never a regulatory report. Use for "what's my company's carbon footprint?", "bilan carbone de ma boîte ?", "quels postes émettent le plus ?", "how much CO2 does my spending represent?", "empreinte carbone depuis mes dépenses".
+description: Spend-based carbon footprint estimator for Qonto accounts. Classifies real debits into emission categories (energy, travel, digital & cloud, purchased goods, services, catering) and applies sourced, dated monetary emission factors (kgCO2e/€, ADEME-style spend-based method) to produce an approximate annual footprint, dominant categories, multi-year trend, and the 3 most effective levers given actual spending. Read-only Qonto access; may write a local HTML dashboard. Honest about ±50% uncertainty — a pre-assessment, never a regulatory report. Use for "what's my company's carbon footprint?", "bilan carbone de ma boîte ?", "quels postes émettent le plus ?", "how much CO2 does my spending represent?", "empreinte carbone depuis mes dépenses".
 permissions:
   mcp:
     datagouv: [get_dataset_info, query_resource_data, search_datasets]
-    qonto: [get_organization, list_cash_flow_categories, list_labels, list_supplier_invoices, list_transactions]
+    qonto: [get_organization, list_labels, list_supplier_invoices, list_transactions]
   network: []
   env: []
   tools: [Read, Write]
@@ -12,7 +12,7 @@ permissions:
 
 # Qonto Carbon Ledger
 
-Your bank statement is secretly a carbon ledger — this skill reads it. Small businesses never do a carbon assessment because they have no data; but bank debits ARE data. 100 % read-only: the skill estimates and explains, it never writes anything and never sells offsets.
+Your bank statement is secretly a carbon ledger — this skill reads it. Small businesses never do a carbon assessment because they have no data; but bank debits ARE data. Qonto access is read-only: the skill estimates and explains, may save a local HTML dashboard, and never sells offsets.
 
 ## Prerequisites
 1. `get_organization` → accounts, country, legal identity. **Nothing hardcoded**: every figure comes from the user's own transactions.
@@ -30,7 +30,7 @@ The spend-based method covers **purchased goods, services and energy** (a scope-
 ### 3. Classify debits into emission categories
 Normalize counterparty names (case, accents, multiple spellings merged as one), then map each debit to a category using counterparty + label + supplier invoice context:
 énergie (fuel / electricity / gas separated when the counterparty allows — the factors differ ×10), transport & travel (air vs rail vs road separated when possible), digital cloud & SaaS, purchased goods & equipment, services & professional fees, catering & food, insurance & banking fees.
-⚠️ `list_cash_flow_categories` returns **403 missing oauth scope** on the claude.ai connector → use **labels** as the classification fallback, never that tool. Ambiguous debits go to a visible "unclassified" bucket with a mid-range factor — disclose its share; if it exceeds ~20 % of spend, say the estimate is weak and ask the user to label top counterparties.
+Use **labels** to help classify debits. Ambiguous debits go to a visible "unclassified" bucket with a mid-range factor — disclose its share; if it exceeds ~20 % of spend, say the estimate is weak and ask the user to label top counterparties.
 
 ### 4. Convert to excl-VAT amounts
 Monetary factors apply to **€ excluding VAT**. Use each transaction's `vat_amount` when present; when null, estimate net = amount ÷ 1.20 (standard French rate) and disclose how many debits were estimated. Large one-off purchases (vehicle, machine ≥ ~5 000 €) are flagged separately so a single investment doesn't masquerade as a recurring emission.
@@ -61,13 +61,13 @@ All factors carry **±50 % or more uncertainty** — that is inherent to the mon
 3. **Trend** across the 24–36 months read (per year or rolling 12 months), with the caveat that spend changes ≠ emission changes if prices moved.
 4. **Top-3 levers**, ranked by estimated impact given the REAL amounts (e.g. rail instead of short-haul air on the routes actually paid, green electricity contract, refurbished equipment) — each with estimated tCO2e saved and cost direction (free / saves money / costs money). Never sell or recommend carbon offsets.
 
-**Additionally, when the host renders files** (claude.ai artifacts, Claude Desktop, Claude Code): generate an **HTML dashboard** — footprint gauge with uncertainty band, category bars, trend, levers. If the host cannot render files, say nothing about it: the markdown tables are the deliverable.
+**Additionally, when the host renders files** (claude.ai artifacts, Claude Desktop, Claude Code): generate an **HTML dashboard** — footprint gauge with uncertainty band, category bars, trend, levers. This may write a local HTML file containing categorized spend and counterparty data; tell the user where it was saved. If the host cannot render files, say nothing about it: the markdown tables are the deliverable.
 
 Cross-reference: pairs naturally with `qonto-sector-benchmark` (same spirit — your real flows × public reference data).
 
 ## Guardrails
 - **This is an order-of-magnitude pre-assessment, not a regulatory carbon report (BEGES / CSRD / GHG Protocol).** Say it in every report; for an official assessment, recommend a specialized provider. Never present the output as compliant or auditable.
 - Every factor displayed with its source and vintage; every figure with its uncertainty band. No false precision, ever.
-- Read-only: zero write tools. Never propose paid "compensation"/offsets.
+- Qonto read-only: never call Qonto write tools. `Write` is only for the local HTML dashboard. Never propose paid "compensation"/offsets.
 - Country ≠ FR → identical method, factors flagged as needing adaptation; never pretend local calibration.
 - Mask IBANs (last 4 digits). Paginate everything (`per_page` ≤ 50). `get_organization` always first.

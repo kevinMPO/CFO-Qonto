@@ -105,7 +105,7 @@
   <h1>qonto-carbon-ledger</h1>
   <p class="sub">Ton relevé bancaire est un registre carbone qui s'ignore — l'empreinte approchée de ta boîte, depuis ses dépenses réelles.</p>
   <div class="badges">
-    <span>🔒 100 % lecture seule</span><span>📉 ±50 % affiché partout</span>
+    <span>🔒 Qonto en lecture seule</span><span>📉 ±50 % affiché partout</span>
     <span>🇫🇷 Facteurs sourcés &amp; millésimés</span><span>📄 PR-ready</span>
   </div>
 </div>
@@ -143,7 +143,7 @@
   <h3>Ce qui rend le skill robuste sur données sales</h3>
   <ul>
     <li><strong>Périmètre honnête, annoncé</strong> : la méthode dépenses couvre biens, services et énergie. Exclus et dits exclus : virements internes, salaires, impôts, TVA, remboursements d'emprunt, dividendes — les flux financiers n'ont pas de facteur d'émission</li>
-    <li><strong>Contreparties normalisées</strong> (casse, accents, graphies multiples fusionnées) + labels + factures fournisseurs — et <code>list_cash_flow_categories</code> renvoyant <strong>403</strong> sur le connecteur claude.ai, le repli se fait sur les labels</li>
+    <li><strong>Contreparties normalisées</strong> (casse, accents, graphies multiples fusionnées) + labels + factures fournisseurs pour classer les débits</li>
     <li><strong>Poste « non classé » visible</strong> avec sa part ; au-delà de ~20 % des dépenses, le skill dit que l'estimation est fragile et propose de labelliser les principales contreparties</li>
     <li><strong>Montants HT</strong> : <code>vat_amount</code> quand il existe, sinon ÷ 1,20 — avec le nombre de lignes estimées annoncé</li>
     <li><strong>Gros achats ponctuels isolés</strong> (≥ ~5 000 €) : un véhicule acheté une fois ne se déguise pas en émission récurrente</li>
@@ -156,7 +156,7 @@
   <div class="diagram"><img src="../assets/functional.fr.svg" alt="Schéma fonctionnel"></div>
   <div class="secu" style="margin-top:1rem">
     <div class="lock">🔒</div>
-    <p><b>Que des traits pleins :</b> ce skill est 100 % lecture. Aucune écriture, aucune demande de virement, aucun paiement — il n'y a littéralement <b>rien à approuver</b>. Le seul livrable est de l'information : des tableaux et un dashboard. Et il ne vend <b>jamais</b> de compensation carbone.</p>
+    <p><b>Qonto en lecture seule :</b> ce skill ne modifie pas le compte, n'effectue aucun virement ni paiement. Il fournit des tableaux et peut enregistrer localement un dashboard HTML contenant des dépenses classées et des noms de contreparties. Il ne vend <b>jamais</b> de compensation carbone.</p>
   </div>
 </section>
 
@@ -211,7 +211,7 @@
     <li><strong>Estimation d'ordre de grandeur, pas un bilan réglementaire</strong> (BEGES / CSRD / GHG Protocol) — rappelé dans chaque rapport ; pour un bilan officiel : prestataire spécialisé</li>
     <li>Chaque facteur affiché avec sa <strong>source et son millésime</strong> ; chaque chiffre avec sa <strong>fourchette</strong> — jamais de fausse précision (« ~9 tCO2e (4,5–13,5) », pas « 9,37 »)</li>
     <li><strong>Jamais de compensation vendue</strong> ni recommandée</li>
-    <li>100 % lecture seule · IBAN masqués (4 derniers chiffres) · pagination ≤ 50 partout</li>
+    <li>Qonto en lecture seule · dashboard HTML local optionnel · IBAN masqués (4 derniers chiffres) · pagination ≤ 50 partout</li>
     <li>Pays ≠ FR : méthode identique, facteurs annoncés comme à adapter — jamais de calibration locale prétendue</li>
   </ul>
 </section>
