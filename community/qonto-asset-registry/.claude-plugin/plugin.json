@@ -1,6 +1,7 @@
 {
   "name": "qonto-asset-registry",
-  "version": "0.1.0",
+  "displayName": "Fixed-asset register",
+  "version": "0.1.1",
   "description": "Read-only fixed-asset register and insurance inventory built from Qonto transactions and supplier invoices.",
   "author": {
     "name": "seb",

@@ -10,7 +10,7 @@
       "name": "qonto-asset-registry",
       "source": "./community/qonto-asset-registry",
       "description": "Read-only fixed-asset register and insurance inventory built from Qonto transactions and supplier invoices.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -25,7 +25,7 @@
       "name": "qonto-counterparty-watch",
       "source": "./community/qonto-counterparty-watch",
       "description": "Legal-health radar for the clients and suppliers of a Qonto account. Ranks every counterparty by real exposure (unpaid client invoices, supplier commitments, recurring spend), measures actual payment delays against due dates, and \u2014 when a Datagouv MCP is available \u2014 cross-checks French public\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -40,7 +40,7 @@
       "name": "qonto-crew-onboard",
       "source": "./community/qonto-crew-onboard",
       "description": "One-sentence financial onboarding (and offboarding) of an employee on Qonto. Reads a per-role policy defined once with the user (card caps, online-only, team), then on \"Alex starts Monday as a developer\" it invites the member, creates the team if new, and prepares a capped card request that\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -55,7 +55,7 @@
       "name": "qonto-grant-scout",
       "source": "./community/qonto-grant-scout",
       "description": "Public-funding scout for Qonto accounts. Builds the company's real profile from the account \u2014 sector, location, size, actual spending structure (training, equipment, digital, hiring, export, energy) \u2014 then cross-references it with French public aid referentials on data.gouv.fr (via the Datagouv MCP\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -115,7 +115,7 @@
       "name": "qonto-tax-pilot",
       "source": "./community/qonto-tax-pilot",
       "description": "French tax radar and cash pilot for Qonto accounts. Builds a dated, amount-estimated tax schedule (VAT, corporate tax instalments, CFE, dividend flat tax), projects the next 90 days of cash, computes the month's tax provision, and \u2014 with explicit user consent \u2014 creates a transfer request to a\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -130,7 +130,7 @@
       "name": "qonto-tax-radar",
       "source": "./community/qonto-tax-radar",
       "description": "French tax pre-audit (\"pr\u00e9-contr\u00f4le fiscal\") for Qonto accounts, 100% read-only. Screens transactions against the 8 verification axes real DGFIP auditors use \u2014 lavish expenses, personal spending booked as business, director's current account, VAT deducted vs receipts on file, benefits in kind\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -145,7 +145,7 @@
       "name": "qonto-vat-return",
       "source": "./community/qonto-vat-return",
       "description": "French VAT return (CA3, form 3310-CA3) preparer for Qonto accounts. Builds the declaration box by box from real account data \u2014 collected VAT per rate (20/10/5.5/2.1%), deductible VAT (goods & services, fixed assets), net VAT payable or credit to carry forward \u2014 as a \"form box \u2192 amount \u2192\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"
@@ -160,7 +160,7 @@
       "name": "veto",
       "source": "./community/veto",
       "description": "Manages guarded accounts receivable in Qonto for French businesses. Audits client readiness, verifies French and EU business identity, prepares compliant invoices and quotes, creates invoice-linked payment pages, drafts contextual invoice emails, checks payments, and prepares overdue reminders. Use\u2026",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "Community",
       "tags": [
         "community"

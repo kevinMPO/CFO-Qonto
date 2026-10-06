@@ -78,13 +78,14 @@ def summary(description: str) -> str:
 
 
 def readme_table(found: list[tuple[str, Path, dict]]) -> str:
-    rows = ["| Plugin | What it does | Author | Tier |", "|---|---|---|---|"]
+    rows = ["| Plugin | Title | What it does | Author | Tier |", "|---|---|---|---|---|"]
     for tier, d, m in found:
         author = m.get("author")
         if isinstance(author, dict):
             author = f"[{author.get('name', '')}]({author['url']})" if author.get("url") else str(author.get("name", ""))
         desc = summary(m.get("description", "")).replace("|", "\\|")
-        rows.append(f"| [`{m['name']}`](./{tier}/{d.name}) | {desc} | {author or ''} | {tier} |")
+        title = str(m.get("displayName", "")).replace("|", "\\|")
+        rows.append(f"| [`{m['name']}`](./{tier}/{d.name}) | {title} | {desc} | {author or ''} | {tier} |")
     return "\n".join(rows) + "\n"
 
 
