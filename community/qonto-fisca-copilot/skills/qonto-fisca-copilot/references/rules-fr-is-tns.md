@@ -1,5 +1,9 @@
 # 🇫🇷 France — regime: **IS + TNS** — SARL / EURL à l'IS, gérant majoritaire (TNS)
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > Country+regime pack loaded when `legal_country == "FR"` **and** `regime_fiscal == "IS"`
 > **and** `regime_social == "TNS"` (the most common société case). Sibling packs:
 > `rules-fr-micro.md` (auto-entrepreneur), `rules-fr-ir-reel.md` (EURL-IR/EI), and
@@ -240,16 +244,19 @@
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/4421-PGP.html
 
 ### C16 — Abandon de créance en compte courant (retour à meilleure fortune)  · confidence: medium
-- **What**: ✅ abandon d'une créance en CCA avec clause suspensive — optimisation
-  de résultat, réactivable.
+- **What**: ℹ️ un abandon de créance en compte courant d'associé peut être assorti d'une
+  clause de retour à meilleure fortune — mécanisme juridique à connaître, **pas une
+  recommandation** : structuring is for the accountant and a lawyer.
 - **Condition**: ✅ `contrats/compte courant d'associé actif` ; montage avec le comptable.
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/4601-PGP.html
 
-### C17 — Rémunération de fin d'exercice du gérant  · confidence: high
-- **What**: ✅ verser une prime/rémunération complémentaire au gérant avant
-  clôture pour **augmenter la charge déductible** (réduit l'IS), sous réserve de
-  caractère normal (non exagéré).
-- **Condition**: ✅ résultat positif ; régime dirigeant TNS.
+### C17 — Déductibilité de la rémunération du gérant  · confidence: high
+- **What**: ℹ️ la rémunération du gérant TNS (y compris un complément décidé avant
+  clôture) est une **charge déductible du résultat IS** si elle correspond à un travail
+  effectif et n'est pas excessive. **Information only** — the skill does not suggest an
+  amount or a timing; the level of remuneration is a decision for the gérant and the
+  accountant (social charges, retirement rights and cash position all weigh on it).
+- **Condition**: ✅ régime dirigeant TNS ; travail effectif ; rémunération non exagérée.
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/4397-PGP.html
 
 ### N10 — Achat < 500 € HT : déduction immédiate  · confidence: high

@@ -1,9 +1,9 @@
 {
   "name": "qonto-fisca-copilot",
   "version": "0.1.0",
-  "description": "Proactive tax co-pilot for a Qonto business account. Detects the organization's country (via get_organization) and applies that country's rules to a period's transactions, surfacing the tax/legal reflexes a founder forgets — mileage to log, VAT to reverse-charge on foreign SaaS (autoliquidation)…",
+  "description": "Proactive tax co-pilot for a Qonto business account: detects the organization's country and legal form, scans a period's transactions and surfaces the tax reflexes a founder forgets (mileage, reverse-charge VAT on foreign SaaS, missing invoices, non-recoverable hotel VAT) plus under-used tax breaks, each with its source. Read-only on Qonto; writes the transactions to a local JSON file for its trigger script, uses web search to resolve merchant cities and downloads receipts via get_attachment. Advisory only — not tax or financial advice.",
   "author": {
-    "name": "fransys-code",
+    "name": "François Guerlez (FRANSYS)",
     "url": "https://github.com/fransys-code"
   },
   "license": "MIT"

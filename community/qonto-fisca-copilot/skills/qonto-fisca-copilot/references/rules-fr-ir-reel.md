@@ -1,5 +1,9 @@
 # 🇫🇷 France — regime: **IR réel + TNS** — EURL à l'IR / EI au réel
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > Loaded when `regime_fiscal == "IR-réel"` **and** `regime_social == "TNS"`.
 > Fact-checked 10 July 2026 against official sources — see Verification notes at the bottom. Advisory; confirm with your accountant.
 >

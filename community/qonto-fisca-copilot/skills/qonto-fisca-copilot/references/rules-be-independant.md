@@ -1,5 +1,9 @@
 # 🇧🇪 Belgium — IPP/PB (Personne Physique) — Progressive Self-Employed Regime
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026): B2B e-invoicing
 > mandatory from 1 Jan 2026 (finances.belgium.be, 3-month tolerance), social contributions 20.5% main
 > rate, IPP brackets — all confirmed. Exact minimum quarterly contribution is sourced to the 2026 social-fund

@@ -1,5 +1,9 @@
 # 🇩🇪 Germany — GmbH / UG (haftungsbeschränkt) — Geschäftsführer
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (BMF, gesetze-im-internet.de: KStG/FZulG/SGB): KSt 15% (~15.8% incl. SolZ), Forschungszulage
 > 25%+10% SME = 35% with the €12M base from 2026, Pflege 3.6%, dividends 26.375%, VAT 25k/100k — all

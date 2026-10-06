@@ -2,23 +2,20 @@
 name: qonto-fisca-copilot
 description: >-
   Proactive tax co-pilot for a Qonto business account. Detects the organization's
-  country (via get_organization) and applies that country's rules to a period's
-  transactions, surfacing the tax/legal reflexes a founder forgets — mileage to
-  log, VAT to reverse-charge on foreign SaaS (autoliquidation), receipts to demand,
-  non-recoverable hotel VAT — plus the under-used niches to activate (in France:
-  CESU home-help, JEI, redevance domicile, mécénat…), each with its source. France
-  is the fully-verified core; 7 more Qonto countries (DE, IT, ES, AT, BE, NL, PT) have
-  draft packs with human-checked key figures, mapped via references/_coverage-map.md.
-  Use when the user wants tax nudges, tax optimization, "what am I forgetting to
-  deduct", tax breaks / niches, a SARL/TNS or EU-company deduction check, a
-  review of a month's Qonto transactions for tax opportunities. Read-only, advisory —
-  every figure is sourced and flagged; it never replaces the accountant.
+  country and legal form, scans a period's transactions and surfaces the tax reflexes
+  a founder forgets — mileage to log, VAT to reverse-charge on foreign SaaS, receipts
+  to demand, non-recoverable hotel VAT — plus under-used tax breaks, each with its
+  source. France fully verified; DE, IT, ES, AT, BE, NL, PT as draft packs. Use when
+  the user wants tax nudges, "what am I forgetting to deduct", tax breaks, or a review
+  of a month's Qonto transactions. Read-only on Qonto; writes the transactions to a
+  local JSON file for its trigger script, uses web search to resolve merchant cities,
+  downloads receipts via get_attachment. Advisory — not tax or financial advice.
 permissions:
   mcp:
     qonto: [get_attachment, get_organization, get_transaction, list_cash_flow_categories, list_labels, list_supplier_invoices, list_transaction_attachments, list_transactions]
-  network: []
+  network: [qonto.s3.eu-central-1.amazonaws.com]
   env: []
-  tools: [Read, Bash]
+  tools: [Read, Write, Bash, WebSearch]
 ---
 
 # Qonto fisca co-pilot
@@ -34,8 +31,10 @@ always computed from the *actual* organization's profile, never hardcoded.)
 
 ## Stance — read first
 
-- **These are proposals, not tax advice.** Every suggestion must end with "to be
-  confirmed with your accountant." Never present a rule as a certainty.
+- **These are proposals, not tax or financial advice.** Every suggestion must end with
+  "to be confirmed with your accountant." Never present a rule as a certainty, and never
+  recommend *how much* or *when* to pay, invest, distribute or remunerate — describe the
+  rule, let the user and their accountant decide.
 - **No invented figures.** Amounts/ceilings come **only** from the loaded country
   rules pack (`references/rules-<country>-<regime>.md`, e.g. `rules-fr-is-tns.md`), with their source
   and confidence level. If a rule is flagged ⚠️ (uncertain or to-verify), say so
@@ -86,7 +85,8 @@ always computed from the *actual* organization's profile, never hardcoded.)
    `emitted_at_from`/`to` (default: last full month), `per_page=100`, paginating until
    `meta.next_page` is null.
 
-3. **Detect triggers (deterministic).** Write the transactions to a JSON file and run:
+3. **Detect triggers (deterministic).** Write the transactions to a **local, temporary**
+   JSON file (the only file this skill writes — delete it once the report is done) and run:
    ```bash
    python3 scripts/scan_triggers.py <transactions.json>
    ```
@@ -153,9 +153,10 @@ always computed from the *actual* organization's profile, never hardcoded.)
   Never a create/update/delete tool.
 - **Dependencies:** the script (`scan_triggers.py`) uses the Python **standard library
   only** — nothing to install (works offline / in the API's no-network runtime).
-- **Network (attachment reads):** `Qonto:get_attachment` (step 4) downloads the receipt
-  from `qonto.s3.eu-central-1.amazonaws.com` — whitelist it (or
-  `*.s3.eu-central-1.amazonaws.com`) in restricted-network environments.
+- **Network — declared in `permissions`:** `Qonto:get_attachment` (step 4) downloads the
+  receipt from `qonto.s3.eu-central-1.amazonaws.com` (the one host in `permissions.network`);
+  step 4 also uses the agent's **web search** tool (`WebSearch`), sending merchant names only.
+  Nothing else leaves the machine.
 - If the catalogue and a source disagree, say so rather than pick a side.
 - The co-pilot **does not replace the accountant**: it surfaces angles to discuss with them.
 

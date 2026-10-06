@@ -1,5 +1,9 @@
 # 🇵🇹 Portugal — Recibos Verdes — Regime Simplificado (Coeficientes)
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (portaldasfinancas.gov.pt, seg-social.pt): Segurança Social 21.4% on 70% of income, standard
 > VAT 23%, art. 53 CIVA exemption threshold €15,000, simplified-regime coefficients (0.75 / 0.35) —

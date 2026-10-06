@@ -1,5 +1,9 @@
 # 🇩🇪 Germany — §19 UStG — Kleinunternehmerregelung
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 **Scope:** Sole traders & freelancers (Einzelunternehmen / Freiberufler) with turnover below €25,000 prior-year / €100,000 current-year thresholds claiming VAT exemption under §19 UStG.  
 
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official

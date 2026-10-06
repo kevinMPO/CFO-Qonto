@@ -1,5 +1,9 @@
 # 🇦🇹 Austria — Einzelunternehmer — Kleinunternehmer & progressive income tax
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (usp.gv.at, bmf.gv.at): Kleinunternehmer VAT threshold €55,000 (raised 2025), income-tax
 > brackets (top 55% >€1M through 2029), Gewinnfreibetrag €46,400 — all confirmed. NOT professionally

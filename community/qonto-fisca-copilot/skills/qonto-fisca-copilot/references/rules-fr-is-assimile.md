@@ -1,5 +1,9 @@
 # 🇫🇷 France — regime: **IS + assimilé-salarié** — SASU / SAS (président)
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > Loaded when `regime_fiscal == "IS"` **and** `regime_social == "assimilé-salarié"`.
 > Fact-checked 10 July 2026 against official sources — see Verification notes at the bottom. Advisory — end every suggestion with "confirm with your accountant".
 >
@@ -53,10 +57,11 @@
 - **Sources**: https://bofip.impots.gouv.fr/bofip/1124-PGP.html/identifiant=BOI-IR-BASE-20-50-20-20260217 ·
   https://www.impots.gouv.fr/particulier/epargne-retraite
 
-### A5 — Salary vs dividends arbitrage · confidence: high
-- ✅ **Salary is deductible from the IS result** (but ⚠️ ~42–45 % social); ✅ **dividends bear no social
-  charges** (only PFU/IR + 40 % allowance) but ✅ **aren't deductible**. Model both — it's the central
-  SASU optimization.
+### A5 — Salary vs dividends: how each is taxed · confidence: high
+- ℹ️ **Salary is deductible from the IS result** (but ⚠️ ~42–45 % social charges); **dividends bear no
+  social charges** (PFU/IR + 40 % allowance) but **aren't deductible**. **Information only** — the skill
+  states the two tax treatments and does not recommend a split, an amount or a timing; that choice
+  belongs to the president and their accountant (retirement rights, cash needs and risk all matter).
 - **Source**: https://bofip.impots.gouv.fr/bofip/2065-PGP.html
 
 ## Verification notes (10 July 2026)

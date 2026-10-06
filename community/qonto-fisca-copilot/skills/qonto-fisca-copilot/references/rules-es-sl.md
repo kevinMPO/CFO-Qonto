@@ -1,5 +1,9 @@
 # 🇪🇸 Spain — SL/SLU — Impuesto sobre Sociedades (Corporate Income Tax)
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (agenciatributaria.gob.es, boe.es): IS 25% standard / 15% new-company / micro scale, VAT 21%,
 > capitalization reserve 20–30%, VERI*FACTU mandatory for companies (IS) from **1 Jan 2027** (autónomos

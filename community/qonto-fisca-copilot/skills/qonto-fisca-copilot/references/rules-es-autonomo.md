@@ -1,5 +1,9 @@
 # 🇪🇸 Spain — IRPF (Estimación Directa) + RETA — Autónomo / Trabajador Autónomo Individual
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (boe.es, seg-social.es). ✗ Fixed: RETA total ~31.4% (the machine pass had wrongly cut it to
 > 28.30% = comunes only). NOT professionally reviewed — confirm with an asesor fiscal / gestoría before use.

@@ -1,5 +1,9 @@
 # 🇦🇹 AT — GmbH / FlexKapG — Austrian Limited Liability Company
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against official
 > sources (usp.gv.at, bmf.gv.at, wko.at): KöSt 23%, KESt 27.5%, VAT 20%, minimum CIT €500, B2G
 > e-invoicing since 2014, ViDA B2B mandatory 2030 — all confirmed. NOT professionally reviewed —

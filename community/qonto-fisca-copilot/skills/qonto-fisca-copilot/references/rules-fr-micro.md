@@ -1,5 +1,9 @@
 # 🇫🇷 France — Micro / auto-entrepreneur — tax rules
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > Country+regime file loaded when `regime_fiscal == "micro"` (auto-entrepreneur, micro-EI,
 > micro-EURL). Fact-checked 10 July 2026 against official sources — see Verification notes
 > at the bottom. Advisory; confirm with your accountant. Rule descriptions keep French legal

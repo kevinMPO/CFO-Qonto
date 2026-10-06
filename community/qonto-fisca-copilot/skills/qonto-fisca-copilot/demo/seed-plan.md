@@ -5,7 +5,7 @@ Goal: seed the Qonto **sandbox** with fabricated transactions so the
 **public-safe, non-identifying data**.
 
 - Mirror of `demo/demo-transactions.json` (used to test the scripts locally).
-- Create via the QA tool (`qa-sandbox.staging.qonto.co`) or its MCP.
+- Create them in a Qonto **sandbox** organization (ask your Qonto contact for sandbox access).
 
 ## 🔒 De-identification rules (the whole point)
 
@@ -64,14 +64,14 @@ Set via the sandbox org metadata / `profile.md`:
 
 Analyze **one month** — crisp, one clear "wow" (the mileage detective reading the city
 off the receipt). The skill's value shows on a single month; no year of data needed.
-- **Seeding**: creating 130 rows by hand is heavy → prefer the QA **Import Seeds** (bulk)
-  or the QA **MCP**. If neither works, seed **June (16 rows) + 2-3 older months** so the
-  account still shows visible depth on screen.
+- **Seeding**: creating 130 rows by hand is heavy → prefer a bulk import if the sandbox
+  offers one. Otherwise seed **June (16 rows) + 2-3 older months** so the account still
+  shows visible depth on screen.
 
 ## Next
 
 1. Create a neutral sandbox org (**NIMBUS SAS**, Paris) or rename the current one.
 2. Confirm the office city = Paris (`get_organization`).
-3. Create the 16 rows (QA tool / QA MCP).
-4. Get the sandbox **read** MCP endpoint (ask Stefano in `#qonto-mcp-hackathon`).
+3. Create the 16 rows in the sandbox.
+4. Connect the sandbox **read-only** MCP endpoint to the agent.
 5. Run the skill end-to-end on the seeded sandbox → record the demo.

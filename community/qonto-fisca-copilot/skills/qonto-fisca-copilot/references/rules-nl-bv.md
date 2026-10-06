@@ -1,5 +1,9 @@
 # 🇳🇱 Netherlands — BV (Besloten Vennootschap) — DGA (Director-Shareholder)
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against belastingdienst.nl:
 > Vpb 19% (≤€200k) / 25.8%, mileage €0.25/km (2026), box 2 rates — confirmed. DGA gebruikelijk loon left ⚠️
 > (confirm exact 2026 amount). NOT professionally reviewed — confirm with a belastingadviseur before use.

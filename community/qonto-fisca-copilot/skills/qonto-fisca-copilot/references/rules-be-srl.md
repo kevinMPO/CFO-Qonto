@@ -1,5 +1,9 @@
 # 🇧🇪 Belgium — SRL / BV — SME reduced 20% ISoc
 
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026): ISoc 20% first
 > €100k / 25% over, reduced-rate director minimum €50,000, VVPRbis 15%→18% from 1 Jul 2026, SME
 > thresholds €11.25M/€6M/50 (law of 27 Mar 2024), B2B e-invoicing from 1 Jan 2026 — all confirmed.

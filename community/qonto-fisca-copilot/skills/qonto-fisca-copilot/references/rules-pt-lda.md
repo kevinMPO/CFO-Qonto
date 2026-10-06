@@ -1,4 +1,8 @@
 # 🇵🇹 Portugal — Lda (Sociedade por Quotas) — Gerente
+> **Not tax, legal or financial advice.** This file is a sourced catalogue of rules the skill
+> may *surface*. It never tells the user what to pay, distribute or invest, nor when; every item
+> is an angle to discuss with a qualified accountant or tax advisor, who decides.
+>
 > ⚠️ AUTO-GENERATED DRAFT — load-bearing figures human-checked (Opus, 11 July 2026) against the official
 > CIRC art. 87 (portaldasfinancas.gov.pt): 2026 IRC = **19% general, 15% PME on the first €50,000**
 > (→18% in 2027, 17% in 2028), Derrama Estadual 3/5/9% — confirmed. Depreciation tables & municipal
