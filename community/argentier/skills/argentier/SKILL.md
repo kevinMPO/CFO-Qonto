@@ -31,7 +31,7 @@ Using the Qonto MCP, analyse my outflows over the last 30 days, compare them wit
 5. **Run the five detectors.**
    - **Duplicate tools**: two paid tools for the same job (two AI assistants, two CRMs, two LinkedIn automation tools, two email senders, two video tools), and two plans billed by the same vendor in the same month. Recommend keeping one and say which and why.
    - **Ghost subscriptions**: small recurring amounts with no visible use, trials that turned into recurring charges. Ask "do you still use X?", never decide for the user.
-   - **New this month**: counterparties present now and absent in the previous window. Verdict: OK, to watch, probable duplicate.
+   - **New this month**: counterparties present now and absent in the previous window. Billing dates drift by a few days, so look 7 days further back before calling one new. Verdict: OK, to watch, probable duplicate.
    - **Price increases**: same counterparty, amount up more than 10 percent versus the previous window.
    - **FX leakage**: sum of FX fees and number of foreign-currency subscriptions. Suggest paying them in their currency or annual billing.
 
