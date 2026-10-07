@@ -24,6 +24,8 @@
 - **IS 15 % reduced band** — there is no IS. → https://bofip.impots.gouv.fr/bofip/2062-PGP.html
 - **Dividends & the 10 % threshold** — no dividend mechanism at the IR; profit is taxed
   directly at the entrepreneur's IR rate whether withdrawn or not.
+- **C10 — article 62 remuneration: 10 % forfait vs frais réels** — do not inherit this
+  rule for EURL-IR / EI. Owner draws are not article 62 remuneration; see R2.
 
 ## 🎯 ADD (IR-réel / TNS / EI specifics)
 
@@ -32,9 +34,13 @@
   cotisation-deduction model). Applies to the EURL-IR gérant / EI (TNS).
 - **Source**: https://www.urssaf.fr/accueil/independant/comprendre-payer-cotisations/reforme-cotisations-independants.html
 
-### R2 — Gérant: 10 % forfait vs frais réels · confidence: high · ✅ confirmed
-- The gérant can deduct a **10 % forfait** on remuneration **or** itemized real expenses —
-  one or the other, chosen annually. Compare each year.
+### R2 — Owner draws: no article 62 remuneration allowance · confidence: high
+- In EURL-IR / EI au réel, the owner's draw is a share of business profit, not
+  remuneration taxed under article 62 CGI. **Do not apply the 10 % remuneration
+  allowance**, and do not inherit baseline C10. Actual eligible business expenses
+  belong in the BIC/BNC result; no additional deduction arises from withdrawing money.
+- The cited source covers article 62 remuneration, including EURL opting for **IS**;
+  it does not grant this allowance to an EURL remaining at IR or an EI au réel.
 - **Source**: https://www.impots.gouv.fr/particulier/questions/je-suis-gerant-dune-societe-puis-je-beneficier-des-frais-reels
 
 ### R3 — CSG-CRDS partly deductible · confidence: ⚠️ reform 2026 — do not quote a firm rate
@@ -88,7 +94,7 @@
 
 **Official sources consulted:**
 - https://www.urssaf.fr/accueil/independant/comprendre-payer-cotisations/reforme-cotisations-independants.html (26% abatement, TNS reform)
-- https://www.impots.gouv.fr/particulier/questions/je-suis-gerant-dune-societe-puis-je-beneficier-des-frais-reels (gérant 10% forfait)
+- https://www.impots.gouv.fr/particulier/questions/je-suis-gerant-dune-societe-puis-je-beneficier-des-frais-reels (article 62 remuneration scope; not EURL-IR/EI owner draws)
 - https://bofip.impots.gouv.fr/bofip/5658-PGP.html (CSG deductibility for earned income)
 - https://bofip.impots.gouv.fr/bofip/839-PGP.html (CVAE thresholds, updated 2025-11-19)
 - https://bofip.impots.gouv.fr/bofip/822-PGP.html (IS option terms)
@@ -98,3 +104,8 @@
 **Residual risk:**
 - The 2026 social contribution reform (26% abatement replacing contribution deductions) is still being implemented. CSG deductibility may be affected by decree changes in April 2026 when the 2025 income declaration campaign opens. Recommend re-verification when Q2 2026 URSSAF/BOFIP guidance is published.
 - PER (TNS) ceiling and mileage barème for 2026 remain unchecked; refer to `rules-fr-is-tns.md` for these figures.
+
+**Security review correction (7 October 2026):** R2 previously granted an article 62
+10% remuneration allowance in the IR-réel pack. The cited source limits that treatment
+to qualifying remuneration, including EURL opting for IS. R2 now excludes owner draws,
+and baseline C10 is explicitly dropped; the July claim of confirmation was incorrect.

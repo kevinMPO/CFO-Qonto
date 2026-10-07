@@ -144,13 +144,21 @@
   https://www.economie.gouv.fr/particuliers/impots-et-fiscalite/gerer-mon-impot-sur-le-revenu/services-la-personne-ce-quil-faut-savoir-sur-le-statut-de-particulier-employeur
 
 ### C2 — Statut JEI (Jeune Entreprise Innovante)  · confidence: high (éligibilité à vérifier)
-- **What**: exonération d'IS (100 % an 1, 50 % an 2) + CFE/taxe foncière.
-- **Condition**: ✅ < 8 ans, PME, **≥ 20 % de dépenses en R&D** (seuil relevé 2025,
-  en vigueur 2026), société créée avant le 31/12/2025.
-- **Eligibility — evaluate against the profile**: 🟡 comparer `legal_registration_date` à la
-  fenêtre (**< 8 ans** et créée **avant le 31/12/2025**). Gros gain **si** vraie activité R&D —
-  à qualifier sérieusement, ne jamais affirmer l'éligibilité R&D.
+- **What**: le statut JEI et chaque exonération ont des conditions distinctes.
+  L'exonération d'IS (100 % au premier exercice bénéficiaire, puis 50 % à l'exercice
+  bénéficiaire suivant) est réservée aux entreprises **créées avant le 01/01/2024**.
+  **Création à partir du 01/01/2024 → aucune exonération d'IS au titre de la JEI**,
+  même si la société remplit les conditions du statut. CFE/taxe foncière : vérifier
+  séparément les conditions et la délibération locale ; ne pas les présenter comme automatiques.
+- **Conditions du statut — à vérifier toutes** : PME, **≥ 20 % de dépenses en R&D**
+  (seuil relevé 2025, en vigueur 2026), détention du capital et activité nouvelle.
+  Âge : **< 11 ans** pour une entreprise créée avant le 01/01/2023 ; **< 8 ans** sinon.
+- **Eligibility — evaluate against the profile**: 🟡 vérifier `legal_registration_date`
+  et les autres conditions avec le comptable. Tester séparément le seuil du **01/01/2024**
+  pour l'exonération d'IS et vérifier qu'elle n'est pas déjà épuisée. Ne jamais affirmer
+  l'éligibilité R&D ni chiffrer une exonération d'IS pour une entreprise créée depuis 2024.
 - **Source**: ✅ https://bofip.impots.gouv.fr/bofip/5357-PGP.html
+- **Conditions du statut / impôts locaux** : https://entreprendre.service-public.gouv.fr/vosdroits/F31188
 
 ### C3 — CIR / CII (crédit d'impôt recherche / innovation)  · confidence: high (R&D à qualifier)
 - **What**: ✅ CIR **30 % des dépenses de R&D ≤ 100 M€** (5 % au-delà) — taux de droit
@@ -342,7 +350,7 @@
 - Mécénat reduction (60%, up to 20,000 € or 0.5% CA) → BOFIP 6495-PGP
 - Current account interest rates (4.44–4.55% early 2026) → BOFIP 5505-PGP ACTU-2026-00002
 - PER ceiling (10% of professional income, ~38,448 €) → impots.gouv.fr/particulier/epargne-retraite
-- JEI criteria (< 8 years, ≥ 20% R&D) → BOFIP ACTU-2025-00073
+- JEI criteria → see C2; status eligibility and profit-tax exemption must be checked separately.
 - Formation tax credit abolition → Law n° 2026-103, article 17 (BOFIP ACTU-2026-00044)
 - Mileage rates not revalued for 2026 → BOFIP ACTU-2026-00009
 - 26% TNS abatement in force → URSSAF Réforme de l'assiette sociale 2026
@@ -362,3 +370,8 @@
 6. JEI and CIR/CII eligibility (C2, C3) — while the rules are confirmed, the R&D activity classification is subjective and requires documentation review.
 
 **Advisory:** This file is a baseline reference pack and should always be reviewed by a tax professional before relying on any single rule. Figures for 2026 are indexed annually and may shift; confirm applicable rates with official simulators or your accountant for the exact tax year in question.
+
+**Security review correction (7 October 2026):** C2 previously used a 2025 creation
+cutoff for the JEI profit-tax exemption. BOI-BIC-CHAMP-80-20-20-20 §1 excludes companies
+created from 1 January 2024. Status, profit-tax exemption and local-tax relief now have
+separate eligibility checks; the July verification notes did not establish that distinction.
