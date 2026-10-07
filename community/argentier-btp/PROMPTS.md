@@ -13,4 +13,4 @@ Invoke with `/argentier-btp` or ask in plain language.
 - "I am a subcontractor: invoice with reverse charge."
 
 ## Chain it
-- After invoicing: chase late payments with argentier-collections.
+- After invoicing: "Où en est le chantier ? Facturé, payé, retenue à récupérer."
