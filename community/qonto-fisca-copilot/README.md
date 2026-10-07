@@ -34,7 +34,8 @@ Scans a period's transactions and produces two things:
 
 - **🔔 Transaction-triggered nudges** — reflexes tied to a real spend, e.g.
   - *foreign SaaS (Anthropic Ireland, Vercel US…)* → reverse-charge the VAT on your CA3;
-  - *restaurant in another city* → the agent resolves the merchant's city via web search,
+  - *restaurant in another city* → the agent reads the attached receipt for the city, or
+    offers web search of a sanitized merchant name after your confirmation,
     compares it to your registered office, and proposes mileage only if you actually
     travelled (it drops local restaurants and asks when unsure — no fabricated distance);
   - *hotel* → hotel VAT is not recoverable;
@@ -62,7 +63,7 @@ reads the city off the printed address: **Reims**. A business trip that would ot
 get_organization          → country (rules file) + profile facts (legal form, creation date, capital)
 list_transactions         → the period's transactions (paginated)
 scripts/scan_triggers.py  → deterministic classification into trigger buckets
-web search (best-effort)   → resolve merchant cities for mileage
+receipt / opt-in web search → resolve merchant cities for mileage
 references/rules-<cc>-<regime>.md   → sourced rule catalogue for the detected country
                            → applicability computed against the profile, not hardcoded
 report                     → nudges + niches, each with source + confidence
@@ -101,9 +102,12 @@ But read-only protects **Qonto**. It does not, on its own, protect **the user** 
 - **Presigned attachment URLs are credentials.** `get_attachment` returns a short-lived
   presigned S3 URL — Qonto's own docs say to treat it like a password. It is never printed,
   logged, stored or transmitted.
-- **Egress is minimal and stated.** The only thing that leaves the machine is a **merchant
-  name**, sent to a web search to resolve a city. No amounts, no counterparties, no IBAN,
-  no balance, no organization name.
+- **External lookup is opt-in and minimized.** The agent reads attached receipts first.
+  If the city remains unresolved, it shows sanitized public merchant names and asks before
+  sending them to an external search provider. No raw bank labels, personal/customer names,
+  invoice/payment references, amounts, IBANs, account/card numbers, balances, organization
+  names or receipt contents go to search providers. Decline search and the agent uses
+  receipts or asks you for the city; unresolved mileage nudges are omitted.
 - **Advisory, not tax advice** — every suggestion is a prompt to discuss with the
   accountant, never a certainty.
 - **No invented figures** — amounts come only from the sourced rules file; uncertain

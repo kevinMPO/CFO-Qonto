@@ -59,7 +59,8 @@
 
 ### N2 — Frais kilométriques (déplacement)  · confidence: high
 - **Trigger**: restaurant / RDV / achat dont le marchand est éloigné du
-  siège (résolu par web lookup du `label`, sinon demander « c'était où ? »).
+  siège (adresse du justificatif, sinon recherche du nom marchand nettoyé après
+  confirmation explicite — voir étape 4 du SKILL.md ; sinon demander « c'était où ? »).
 - **Nudge**: « Déplacement à {ville} (~{km} A/R). Note tes frais kilométriques :
   indemnités non chargées, déductibles. Barème selon la puissance de ton véhicule. »
 - **Rule / barème**: ✅ **non revalorisé par la LF 2026 → barème 2025 reconduit

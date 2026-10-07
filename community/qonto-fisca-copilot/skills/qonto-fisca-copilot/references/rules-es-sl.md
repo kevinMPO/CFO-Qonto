@@ -14,7 +14,7 @@
 - **Transaction-triggered nudges**: Reverse-charge VAT (EU B2B services), e-invoicing (VERI*FACTU), invoice documentation for deductions
 - **Reliefs & niches to activate**: New company reduced rate (15% for 2 years), capitalization reserve reduction (20–30% taxable base), electric vehicle amortization freedom
 - **Thresholds & deadlines 2026**: Corporate tax rates (19%/21% micro, 25% standard, 15% new), VAT rates (21%/10%/4%), filing deadlines (IS July 27, VAT/intra Q4 July 20)
-- **Administrator compensation**: Nómina (salary), dividends, or invoiced services—choose mix based on social security + tax efficiency
+- **Administrator compensation**: Tax treatment of nómina (salary), dividends and invoiced services; the user and their asesor fiscal decide the mix
 - **To verify**: IVA franquicia threshold status, VERI*FACTU platform release date, exact RETA monthly costs for 2026
 
 ---
@@ -146,13 +146,13 @@
 
 **No single best path; depends on company profitability, administrator ownership, and marginal rates. Outline:**
 
-| Channel | Deductible in IS? | IRPF tax on admin | Social security | Timing/flexibility | Best for |
-|---|---|---|---|---|---|
-| **Salary (nómina)** | YES (if documented, real services) | Yes (19–45% progressive) | YES, RETA mandatory (€448/mo base min.) | Monthly/predictable | Stable income; demonstrates legitimacy |
-| **Dividends** | NO (never deductible) | YES (19–30% via base del ahorro IRPF); no withholding if over €600/year | No additional social security | After profit earned; flexible timing | Bonus/profit-sharing post-tax |
-| **Invoice for services** (if not salary) | YES (if bona fide) | YES (treated as self-employed income) | Depends on classification; risky | Ad-hoc; must show real work | Specialized contractor role |
+| Channel | Deductible in IS? | IRPF tax on admin | Social security |
+|---|---|---|---|
+| **Salary (nómina)** | YES (if documented, real services) | Yes (19–45% progressive) | YES, RETA mandatory (€448/mo base min.) |
+| **Dividends** | NO (never deductible) | YES (19–30% via base del ahorro IRPF); no withholding if over €600/year | No additional social security |
+| **Invoice for services** (if not salary) | YES (if bona fide) | YES (treated as self-employed income) | Depends on classification; risky |
 
-- **Common strategy**: 60% salary + 40% dividends (rough example), chosen to balance IS deduction + IRPF tax + RETA burden.
+- **Information only:** These channels have different IS, IRPF and social-security treatment. Do not recommend a salary/dividend split, amount or payment timing; those decisions belong to the administrator and their asesor fiscal.
 - **Hacienda scrutiny (Plan de Control Tributario 2026)**: Administrator compensation is a priority audit target; ensure real services, documentation, and reasonableness.
 - **Source**: [Tedeclaro — Retribución administrador único 2026](https://tedeclaro.com/retribucion-administrador-unico/); [STS 546/2025](https://copilotgestoria.com/blog/retribucion-administrador-sl-2026-nomina-factura-dividendo-hacienda-guia-gestorias)
 

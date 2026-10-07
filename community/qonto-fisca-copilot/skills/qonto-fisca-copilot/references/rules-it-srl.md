@@ -54,7 +54,7 @@
 - **Withholding tax:** ✅ 26% definitive withholding on all profits distributed to individual shareholders (profits from 2018 onwards) (https://www.agenziaentrate.gov.it/portale/documents/20143/8703578/Risposta+n.+59_2025/ac1e518a-9ec4-7b4e-bb4a-95de036507fb)
 - **Shareholder treatment:** ✅ Receives dividend net of 26%; NO additional IRPEF reporting required (closes tax position)
 - **Company obligation:** ✅ Apply withholding at payment; remit by **16th of month following each quarter** (quarterly basis); issue Certificazione Unica (CU) by **16 March** following year (https://www1.agenziaentrate.gov.it/servizi/scadenzario/main.php?op=4&chi=3812&cosa=10864&come=515&entroil=16-04-2025)
-- **Trade-off vs. compenso:** ✅ For marginal IRPEF >50%, dividends (26%) often more efficient than compenso; verify with accountant
+- **Comparison with compenso — information only:** Dividends and director compensation have different company-level, personal-tax and INPS treatment. Describe each separately; do not rank one as more efficient or recommend a channel, split, amount or payment timing. The shareholder and their commercialista decide based on their full situation.
 
 ## 🎯 Reliefs / niches to activate
 

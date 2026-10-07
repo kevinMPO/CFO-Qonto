@@ -14,7 +14,7 @@ SRL/BV (ex-SPRL) with < €11.25M turnover ✅, < €6M balance sheet ✅, < 50 
 ## Contents
 
 - **Transaction-triggered nudges** — Reverse-charge VAT autoliquidation on foreign B2B services, e-invoicing mandatory, mileage/meals deduction limits
-- **Reliefs to activate** — VVPRbis dividend withholding tax (critical timing for 15% vs. 18%), reduced ISoc rate conditions, deductible mileage allowances
+- **Reliefs to discuss** — VVPRbis dividend withholding tax (date-dependent rates), reduced ISoc rate conditions, deductible mileage allowances
 - **Thresholds & deadlines** — VAT exemption, ISoc rates, director remuneration minimum, filing dates
 - **To verify** — VAT exemption threshold increase status (€25k→€30k pending)
 
@@ -52,16 +52,16 @@ SRL/BV (ex-SPRL) with < €11.25M turnover ✅, < €6M balance sheet ✅, < 50 
 
 ## 🎯 Reliefs / niches to activate
 
-**VVPRbis dividend withholding tax — critical timing** ✅
+**VVPRbis dividend withholding tax — date-dependent treatment** ✅
 - **Until 30 June 2026:** Dividends distributed from profits of prior years (or declared at general meeting before 1 July 2026) are subject to **15% withholding tax** ✅ (VVPR bis regime).
   - Conditions: shares held since ≥ 1 July 2013 ✅ (original cash contribution); SRL/BV as small company (turnover < €11.25M ✅, balance sheet < €6M ✅).
-  - **Action:** If planning interim/final dividends, ensure allocation date (board/general-meeting decision) is **before 1 July 2026** ✅ to lock in 15%.
+  - **Information only:** The applicable rate depends on the allocation date and eligibility conditions. Describe the treatment of the user's actual distribution; do not suggest accelerating, delaying or backdating a decision. Distribution timing belongs to the user and their accountant.
 - **From 1 July 2026 onwards:** Withholding tax on VVPRbis dividends rises to **18%** ✅.
   - For contributions made from 1 January 2026, the intermediate 20% rate is abolished; 15% applies for distributions after year 3. ⚠️ to verify (technical scope unclear)
 - **Liquidation reserves:** Distributions after 3-year holding period: 6.5% → 9.8% (from 1 July 2026) ✅. New reserves (created after 31 Dec 2025) face 30% rate if distributed within 3 years. ✅
 - [VVPRbis dividend tax changes](https://www.vandelanotte.be/en/news/higher-withholding-tax-on-vvprbis-dividends-and-liquidation-reserves-from-1-july-2026) ✅
 
-**Reduced ISoc rate (20% on first €100k profit) — director remuneration lever** ✅
+**Reduced ISoc rate (20% on first €100k profit) — director remuneration condition** ✅
 - To qualify, **one director must earn minimum €50,000/year gross remuneration** ✅ (indexed annually on CPI ✅).
   - Benefits in kind may not exceed 20% of this remuneration ✅ (max €10k of €50k).
   - If taxable profit < €50k, remuneration floor can be lowered to taxable profit (calculated as operating profit ÷ 2).
