@@ -58,7 +58,7 @@ It's an orientation **pre-assessment**, not a regulatory report — and the skil
 | Output | Format | When |
 |---|---|---|
 | **Conversation reply** | Markdown tables: footprint + range, category breakdown (factor, source, vintage per line), trend, top-3 levers | **Always** — the baseline |
-| **Interactive dashboard** | **HTML** file/artifact: footprint gauge with uncertainty band, category bars, trend, levers | When the host renders files (claude.ai artifacts, Claude Desktop, Claude Code); automatic fallback to tables otherwise |
+| **Interactive dashboard** | **HTML** file/artifact: footprint gauge with uncertainty band, category bars, trend, levers | Only on explicit user request, when the host renders files; tables otherwise |
 
 ## 🎬 Demo video
 

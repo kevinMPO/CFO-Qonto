@@ -43,7 +43,7 @@ Si le connecteur **Datagouv** est présent, le skill propose de recouper ses fac
 | Sortie | Format | Quand |
 |---|---|---|
 | **Réponse dans la conversation** | Tableaux markdown : empreinte + fourchette, postes, tendance, leviers | **Toujours** — c'est la base |
-| **Dashboard interactif** | Fichier/artifact **HTML** : jauge avec bande d'incertitude, barres par poste, tendance, leviers | Si l'hôte affiche les fichiers (artifacts claude.ai, Claude Desktop, Claude Code) ; sinon repli automatique sur les tableaux |
+| **Dashboard interactif** | Fichier/artifact **HTML** : jauge avec bande d'incertitude, barres par poste, tendance, leviers | Uniquement sur demande explicite, si l'hôte affiche les fichiers ; tableaux sinon |
 
 ## 5️⃣ Dépannage (erreurs connues et vérifiées)
 

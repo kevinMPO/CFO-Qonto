@@ -67,7 +67,7 @@ C'est un **pré-bilan d'orientation**, pas un bilan réglementaire — et le ski
 | Sortie | Format | Quand |
 |---|---|---|
 | **Réponse dans la conversation** | Tableaux markdown : empreinte + fourchette, répartition par poste (avec facteur, source, millésime par ligne), tendance, 3 leviers | **Toujours** — c'est la base |
-| **Dashboard interactif** | Fichier/artifact **HTML** : jauge d'empreinte avec bande d'incertitude, barres par poste, tendance, leviers | Si l'hôte affiche les fichiers (artifacts claude.ai, Claude Desktop, Claude Code) ; sinon repli automatique sur les tableaux |
+| **Dashboard interactif** | Fichier/artifact **HTML** : jauge d'empreinte avec bande d'incertitude, barres par poste, tendance, leviers | Uniquement sur demande explicite, si l'hôte affiche les fichiers ; tableaux sinon |
 
 ## 🎬 Vidéo de démo
 

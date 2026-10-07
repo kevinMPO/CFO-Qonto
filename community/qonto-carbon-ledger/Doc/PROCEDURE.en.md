@@ -43,7 +43,7 @@ If a **Datagouv** connector is present, the skill offers to cross-check its embe
 | Output | Format | When |
 |---|---|---|
 | **Conversation reply** | Markdown tables: footprint + range, categories, trend, levers | **Always** — the baseline |
-| **Interactive dashboard** | **HTML** file/artifact: gauge with uncertainty band, category bars, trend, levers | When the host renders files (claude.ai artifacts, Claude Desktop, Claude Code); automatic fallback to tables otherwise |
+| **Interactive dashboard** | **HTML** file/artifact: gauge with uncertainty band, category bars, trend, levers | Only on explicit user request, when the host renders files; tables otherwise |
 
 ## 5️⃣ Troubleshooting (known, verified quirks)
 
