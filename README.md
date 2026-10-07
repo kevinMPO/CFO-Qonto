@@ -96,7 +96,7 @@ project. Needs Node.js 22.20 or later.
 | Plugin | Title | What it does | Author | Tier |
 |---|---|---|---|---|
 | [`qonto-asset-registry`](./community/qonto-asset-registry) | Fixed-asset register | Read-only fixed-asset register and insurance inventory built from Qonto transactions and supplier invoices. | [seb](https://github.com/SebDeNoocode) | community |
-| [`qonto-counterparty-watch`](./community/qonto-counterparty-watch) | Client & supplier payment risk | Legal-health radar for the clients and suppliers of a Qonto account. | [seb](https://github.com/SebDeNoocode) | community |
+| [`qonto-counterparty-watch`](./community/qonto-counterparty-watch) | Client &amp; supplier payment risk | Legal-health radar for the clients and suppliers of a Qonto account. | [seb](https://github.com/SebDeNoocode) | community |
 | [`qonto-crew-onboard`](./community/qonto-crew-onboard) | Employee onboarding | One-sentence financial onboarding (and offboarding) of an employee on Qonto. | [seb](https://github.com/SebDeNoocode) | community |
 | [`qonto-grant-scout`](./community/qonto-grant-scout) | Public funding finder | Public-funding scout for Qonto accounts. | [seb](https://github.com/SebDeNoocode) | community |
 | [`qonto-prescription-guard`](./community/qonto-prescription-guard) |  | Legal expiry radar for unpaid client invoices on Qonto accounts (France). | [seb](https://github.com/SebDeNoocode) | community |

@@ -11,6 +11,7 @@ entry. The tier is the top-level folder. Contributors never edit the manifests, 
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import re
 import sys
@@ -77,6 +78,13 @@ def summary(description: str) -> str:
     return re.split(r"(?<=[.!?])\s+(?=[A-Z])", text, maxsplit=1)[0].rstrip("…").strip()
 
 
+def readme_title(value: object) -> str:
+    """Render contributor metadata as single-line plain text in a Markdown table."""
+    text = " ".join(str(value).split())
+    text = re.sub(r"([\\`*_{}\[\]()#+.!|~])", r"\\\1", text)
+    return html.escape(text, quote=False)
+
+
 def readme_table(found: list[tuple[str, Path, dict]]) -> str:
     rows = ["| Plugin | Title | What it does | Author | Tier |", "|---|---|---|---|---|"]
     for tier, d, m in found:
@@ -84,7 +92,7 @@ def readme_table(found: list[tuple[str, Path, dict]]) -> str:
         if isinstance(author, dict):
             author = f"[{author.get('name', '')}]({author['url']})" if author.get("url") else str(author.get("name", ""))
         desc = summary(m.get("description", "")).replace("|", "\\|")
-        title = str(m.get("displayName", "")).replace("|", "\\|")
+        title = readme_title(m.get("displayName", ""))
         rows.append(f"| [`{m['name']}`](./{tier}/{d.name}) | {title} | {desc} | {author or ''} | {tier} |")
     return "\n".join(rows) + "\n"
 
