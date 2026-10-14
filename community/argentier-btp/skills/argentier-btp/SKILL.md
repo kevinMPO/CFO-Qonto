@@ -7,7 +7,7 @@ permissions:
     qonto: [get_organization, list_bank_accounts, list_clients, get_client, create_client, list_products, list_quotes, get_quote, create_quote, update_quote, list_client_invoices, get_client_invoice, create_client_invoice, update_client_invoice, list_payment_links, create_payment_link]
   network: []
   env: []
-  tools: [Read]
+  tools: []
 ---
 
 # Construction quote to cash
@@ -16,7 +16,7 @@ Using the Qonto MCP, turn my job description into a compliant building-works quo
 
 ## Steps
 
-1. **Company setup, once per conversation.** `get_organization` (legal name, address, country) and `list_bank_accounts` (the Qonto IBAN required on invoices). Ask once: ten-year liability insurer (assurance décennale), policy number and geographic coverage; default deposit percentage; quote validity; payment terms. Missing décennale details are flagged on every preview: the document is not compliant for building works without them. `list_products` to reuse the user's labour rates and supplies; products carrying `vat_exemption_code: S293B` mean the business is under the VAT franchise. Quote and invoice numbers: when automatic numbering is off (Qonto's default), propose the next number from `list_quotes` or `list_client_invoices` and confirm it.
+1. **Company setup, once per conversation.** `get_organization` (legal name, address, country) and `list_bank_accounts` (the Qonto IBAN required on invoices). Ask once: ten-year liability insurer (assurance décennale), policy number and geographic coverage; default deposit percentage; quote validity; payment terms. Missing décennale details are flagged on every preview: the document is not compliant for building works without them. `list_products` to reuse the user's labour rates and supplies; products carrying `vat_exemption_code: S293B` mean the business is under the VAT franchise. Quote and invoice numbers: use Qonto's automatic numbering when enabled. If the user confirms it is disabled, propose the next number from `list_quotes` or `list_client_invoices` and confirm it.
 
 2. **Understand the job.** From the description, build lines: labour (hours or days x rate), supplies, equipment, waste removal, travel. Ask only what changes the document:
    - Private individual or business? If business, is the user a subcontractor of a main contractor?
