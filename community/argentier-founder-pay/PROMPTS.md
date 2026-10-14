@@ -12,4 +12,4 @@ Invoke with `/argentier-founder-pay` or ask in plain language.
 - "Can I afford a monthly salary next quarter?"
 
 ## Chain it
-- Before: run argentier-cash-forecast for the 13-week view.
+- If installed, run argentier-cash-forecast for the 13-week view.
